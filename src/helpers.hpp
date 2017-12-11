@@ -42,13 +42,13 @@ class VertexBufferObject
 {
 public:
 	GLuint id;
-	int cols;
+	int attrib_num;
 
 	VertexBufferObject();
 	~VertexBufferObject();
 
 	// Updates the VBO with a 1D array M
-	void update(const GLfloat *M, int mRows, int mCols);
+	void update(const GLfloat *M, int size, int attr_num);
 
 	// Select this VBO for subsequent draw calls
 	void bind();

@@ -1,5 +1,7 @@
+// Local Headers
 #include "helpers.hpp"
 #include "shaders.hpp"
+#include "types.hpp"
 
 // System Headers
 #include <GLFW/glfw3.h>
@@ -9,18 +11,8 @@
 #include <cstdlib>
 #include <iostream>
 
-GLfloat vertices[] = {
-	//  Position      Color             Texcoords
-	-0.5f,  0.5f, 1.0f, 0.0f, 0.0f, 0.0f, 0.0f, // Top-left
-	0.5f,  0.5f, 0.0f, 1.0f, 0.0f, 1.0f, 0.0f, // Top-right
-	0.5f, -0.5f, 0.0f, 0.0f, 1.0f, 1.0f, 1.0f, // Bottom-right
-	-0.5f, -0.5f, 1.0f, 1.0f, 1.0f, 0.0f, 1.0f  // Bottom-left
-};
-
-GLuint elements[] = {
-	0, 1, 2,
-	2, 3, 0
-};
+template<typename T, int size>
+int getArrayLength(T(&)[size]) { return size; }
 
 int main(void)
 {
@@ -78,19 +70,25 @@ int main(void)
 	program.init(vertexSource, fragmentSource, "outColor");
 	program.bind();
 
-	VertexArrayObject VAO;
-	VAO.bind();
+	VertexArrayObject vao;
+	vao.bind();
 
-	VertexBufferObject VBO;
-	VBO.update(vertices, 4, 7);
-	program.bindVertexAttribArray("position", VBO, 2, 0);
-	program.bindVertexAttribArray("color", VBO, 3, 2);
-	program.bindVertexAttribArray("texcoord", VBO, 2, 5);
-	VBO.bind();
+	Map map;
+	map.print();
 
-	ElementBufferObject EBO;
-	EBO.update(elements, 2, 3);
-	EBO.bind();
+	VertexBufferObject vbo_vert;
+	vbo_vert.update(map.vert, getArrayLength(map.vert), 3);
+	program.bindVertexAttribArray("position", vbo_vert, 3, 0);
+	vbo_vert.bind();
+
+	VertexBufferObject vbo_texc;
+	vbo_texc.update(map.texc, getArrayLength(map.texc), 2);
+	program.bindVertexAttribArray("texcoord", vbo_texc, 2, 0);
+	vbo_texc.bind();
+
+	//ElementBufferObject EBO;
+	//EBO.update(elements, 2, 3);
+	//EBO.bind();
 
 	Texture t_cat;
 	t_cat.load(GL_TEXTURE0, "cat.jpg");
@@ -102,8 +100,8 @@ int main(void)
 		glClearColor(0.25f, 0.25f, 0.25f, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT);
 
-		// Draw a rectangle from the 2 triangles using 6 indices
-		glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+		// Draw the map
+		glDrawArrays(GL_TRIANGLES, 0, getArrayLength(map.vert) / 3);
 
 		// Flip Buffers and Draw
 		glfwSwapBuffers(mWindow);

@@ -41,12 +41,12 @@ VertexBufferObject::~VertexBufferObject()
 	glDeleteBuffers(1, &id);
 }
 
-void VertexBufferObject::update(const GLfloat *M, int mRows, int mCols)
+void VertexBufferObject::update(const GLfloat *M, int size, int attr_num)
 {
 	assert(id != 0);
 	glBindBuffer(GL_ARRAY_BUFFER, id);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(GLfloat) * mRows * mCols, M, GL_STATIC_DRAW);
-	cols = mCols;
+	glBufferData(GL_ARRAY_BUFFER, sizeof(GLfloat) * size, M, GL_STATIC_DRAW);
+	attrib_num = attr_num;
 	check_gl_error();
 }
 
@@ -139,7 +139,7 @@ GLint Program::bindVertexAttribArray(
 	}
 	VBO.bind();
 	glEnableVertexAttribArray(id);
-	glVertexAttribPointer(id, attrib_num, GL_FLOAT, GL_FALSE, VBO.cols * sizeof(GLfloat), (void*)(offset * sizeof(GLfloat)));
+	glVertexAttribPointer(id, attrib_num, GL_FLOAT, GL_FALSE, VBO.attrib_num * sizeof(GLfloat), (void*)(offset * sizeof(GLfloat)));
 	check_gl_error();
 
 	return id;
