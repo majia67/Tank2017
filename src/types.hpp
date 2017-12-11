@@ -2,9 +2,11 @@
 
 #include <cstdio>
 
-#define BOARD_SIZE 4
+#define SCREEN_WIDTH 1024
+#define SCREEN_HEIGHT 768
+#define BOARD_SIZE 12
 #define MAP_ROWS BOARD_SIZE
-#define MAP_COLS BOARD_SIZE
+#define MAP_COLS (BOARD_SIZE - 2)
 
 struct Map
 {
@@ -20,7 +22,7 @@ struct Map
 		// Initialize vertices
 		for (int i = 0; i < MAP_ROWS; i++) {
 			for (int j = 0; j < MAP_COLS; j++) {
-				int st = (i * MAP_ROWS + j) * 6 * 3;
+				int st = (i * MAP_COLS + j) * 6 * 3;
 
 				// set x coord
 				vert[st] = -1.0f + j * BLOCK_WIDTH;
@@ -45,15 +47,13 @@ struct Map
 				vert[st + 11] = 0.0f;
 				vert[st + 14] = 0.0f;
 				vert[st + 17] = 0.0f;
-
-				printf("%.2f\t%.2f;\t%.2f\t%.2f\t\n", vert[st], vert[st + 1], vert[st + 3], vert[st + 4]);
 			}
 		}
 
 		// Initialize texture coordinates
 		for (int i = 0; i < MAP_ROWS; i++) {
 			for (int j = 0; j < MAP_COLS; j++) {
-				int st = (i * MAP_ROWS + j) * 6 * 2;
+				int st = (i * MAP_COLS + j) * 6 * 2;
 
 				// set x coord
 				texc[st] = 0.0f;
@@ -79,8 +79,8 @@ struct Map
 		for (int i = 0; i < MAP_ROWS; i++) {
 			for (int j = 0; j < MAP_COLS; j++) {
 				printf("Block %d, %d\n", i, j);
-				int st_v = (i * MAP_ROWS + j) * 6 * 3;
-				int st_t = (i * MAP_ROWS + j) * 6 * 2;
+				int st_v = (i * MAP_COLS + j) * 6 * 3;
+				int st_t = (i * MAP_COLS + j) * 6 * 2;
 				for (int k = 0; k < 6; k++) {
 					printf("%.2f\t%.2f\t%.2f\t%.2f\t%.2f\t\n",
 						vert[st_v + k * 3],

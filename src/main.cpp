@@ -36,7 +36,7 @@ int main(void)
 #endif
 
     // Create a windowed mode window and its OpenGL context
-    mWindow = glfwCreateWindow(640, 480, "Hello World", NULL, NULL);
+    mWindow = glfwCreateWindow(SCREEN_WIDTH, SCREEN_HEIGHT, "Hello World", NULL, NULL);
     if (!mWindow)
     {
         glfwTerminate();
@@ -74,7 +74,6 @@ int main(void)
 	vao.bind();
 
 	Map map;
-	map.print();
 
 	VertexBufferObject vbo_vert;
 	vbo_vert.update(map.vert, getArrayLength(map.vert), 3);
@@ -85,10 +84,6 @@ int main(void)
 	vbo_texc.update(map.texc, getArrayLength(map.texc), 2);
 	program.bindVertexAttribArray("texcoord", vbo_texc, 2, 0);
 	vbo_texc.bind();
-
-	//ElementBufferObject EBO;
-	//EBO.update(elements, 2, 3);
-	//EBO.bind();
 
 	Texture t_cat;
 	t_cat.load(GL_TEXTURE0, "cat.jpg");
