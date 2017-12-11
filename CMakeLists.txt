@@ -18,8 +18,11 @@ endif()
 ### Add src to the include directories
 include_directories("${CMAKE_CURRENT_SOURCE_DIR}/src")
 
-### Add stb
+### Add stb for image handling
 include_directories("${CMAKE_CURRENT_SOURCE_DIR}/ext/stb")
+
+### Add glm for matrices and mathematics
+include_directories("${CMAKE_CURRENT_SOURCE_DIR}/ext/glm")
 
 ### Compile GLFW3 statically
 set(GLFW_BUILD_EXAMPLES OFF CACHE BOOL " " FORCE)
