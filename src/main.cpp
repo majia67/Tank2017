@@ -13,6 +13,8 @@
 
 GLFWwindow* mWindow;
 Map map;
+Unit tank_user;
+std::vector<Unit> tank_enemies;
 
 template<typename T, int size>
 int getArrayLength(T(&)[size]) { return size; }
@@ -86,7 +88,6 @@ int main(void)
 	}
 
 	init_map();
-	map.print();
 
 	Program program;
 	program.init(vertexSource, fragmentSource, "outColor");

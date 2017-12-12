@@ -4,8 +4,9 @@
 #include <cassert>
 #include <string>
 #include <vector>
-#include <array>
 #include <fstream>
+
+#include <glm/glm.hpp>
 
 #define SCREEN_WIDTH 1024
 #define SCREEN_HEIGHT 768
@@ -33,12 +34,13 @@ struct Unit
 	float pos[2];
 };
 
+std::vector<glm::mat2> texture_mapping;
+
 struct Map
 {
 	float vert[MAP_ROWS * MAP_COLS * 6 * 3];
 	float texc[MAP_ROWS * MAP_COLS * 6 * 2];
-	Unit units[MAP_ROWS][MAP_COLS];
-	std::vector<std::array<float, 4>> texture_mapping;
+	Unit_Type unit_types[MAP_ROWS][MAP_COLS];
 
 	Map() { init(); }
 	
@@ -85,20 +87,20 @@ struct Map
 			for (int j = 0; j < MAP_COLS; j++) {
 				int st = (i * MAP_COLS + j) * 6 * 2;
 
-				int unit_type = static_cast<int>(units[i][j].type);
+				int unit_type = static_cast<int>(unit_types[i][j]);
 
 				// set x coord
-				texc[st] = texture_mapping[unit_type][0];
-				texc[st + 2] = texture_mapping[unit_type][2];
+				texc[st] = texture_mapping[unit_type][0].x;
+				texc[st + 2] = texture_mapping[unit_type][1].x;
 				texc[st + 4] = texc[st + 2];
 				texc[st + 6] = texc[st + 4];
 				texc[st + 8] = texc[st];
 				texc[st + 10] = texc[st];
 
 				// set y coord
-				texc[st + 1] = texture_mapping[unit_type][1];
+				texc[st + 1] = texture_mapping[unit_type][0].y;
 				texc[st + 3] = texc[st + 1];
-				texc[st + 5] = texture_mapping[unit_type][3];
+				texc[st + 5] = texture_mapping[unit_type][1].y;
 				texc[st + 7] = texc[st + 5];
 				texc[st + 9] = texc[st + 5];
 				texc[st + 11] = texc[st + 1];
@@ -118,7 +120,7 @@ struct Map
 			for (int j = 0; j < c; j++) {
 				int type;
 				fin >> type;
-				units[i][j].type = static_cast<Unit_Type>(type);
+				unit_types[i][j] = static_cast<Unit_Type>(type);
 			}
 		}
 
@@ -133,8 +135,8 @@ struct Map
 		fin >> num;
 
 		for (int i = 0; i < num; i++) {
-			std::array<float, 4> uv;
-			fin >> uv[0] >> uv[1] >> uv[2] >> uv[3];
+			glm::mat2 uv;
+			fin >> uv[0].x >> uv[0].y >> uv[1].x >> uv[1].y;
 			texture_mapping.push_back(uv);
 		}
 
