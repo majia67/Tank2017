@@ -25,10 +25,10 @@ const GLchar* fragmentSource = R"glsl(
 
     out vec4 outColor;
 
-    uniform sampler2D texKitten;
+    uniform sampler2D texMap;
 
     void main()
     {
-        outColor = texture(texKitten, Texcoord);
+        outColor = texture(texMap, Texcoord);
     }
 )glsl";

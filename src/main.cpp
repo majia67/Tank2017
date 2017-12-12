@@ -11,60 +11,82 @@
 #include <cstdlib>
 #include <iostream>
 
+GLFWwindow* mWindow;
+Map map;
+
 template<typename T, int size>
 int getArrayLength(T(&)[size]) { return size; }
 
-int main(void)
+int init_window()
 {
-    GLFWwindow* mWindow;
+	// Initialize the library
+	if (!glfwInit())
+		return -1;
 
-    // Initialize the library
-    if (!glfwInit())
-        return -1;
+	// Activate supersampling
+	glfwWindowHint(GLFW_SAMPLES, 8);
 
-    // Activate supersampling
-    glfwWindowHint(GLFW_SAMPLES, 8);
+	// Ensure that we get at least a 3.2 context
+	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
+	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 2);
 
-    // Ensure that we get at least a 3.2 context
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 2);
-
-    // On apple we have to load a core profile with forward compatibility
+	// On apple we have to load a core profile with forward compatibility
 #ifdef __APPLE__
-    glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
-    glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
+	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+	glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
 #endif
 
-    // Create a windowed mode window and its OpenGL context
-    mWindow = glfwCreateWindow(SCREEN_WIDTH, SCREEN_HEIGHT, "Hello World", NULL, NULL);
-    if (!mWindow)
-    {
-        glfwTerminate();
-        return -1;
-    }
+	// Create a windowed mode window and its OpenGL context
+	mWindow = glfwCreateWindow(SCREEN_WIDTH, SCREEN_HEIGHT, "Hello World", NULL, NULL);
+	if (!mWindow)
+	{
+		glfwTerminate();
+		return -1;
+	}
 
-    // Make the window's context current
-    glfwMakeContextCurrent(mWindow);
+	// Make the window's context current
+	glfwMakeContextCurrent(mWindow);
 
-    #ifndef __APPLE__
-      glewExperimental = true;
-      GLenum err = glewInit();
-      if(GLEW_OK != err)
-      {
-        /* Problem: glewInit failed, something is seriously wrong. */
-       fprintf(stderr, "Error: %s\n", glewGetErrorString(err));
-      }
-      glGetError(); // pull and savely ignonre unhandled errors like GL_INVALID_ENUM
-      fprintf(stdout, "Status: Using GLEW %s\n", glewGetString(GLEW_VERSION));
-    #endif
+#ifndef __APPLE__
+	glewExperimental = true;
+	GLenum err = glewInit();
+	if (GLEW_OK != err)
+	{
+		/* Problem: glewInit failed, something is seriously wrong. */
+		fprintf(stderr, "Error: %s\n", glewGetErrorString(err));
+	}
+	glGetError(); // pull and savely ignonre unhandled errors like GL_INVALID_ENUM
+	fprintf(stdout, "Status: Using GLEW %s\n", glewGetString(GLEW_VERSION));
+#endif
 
-    int major, minor, rev;
-    major = glfwGetWindowAttrib(mWindow, GLFW_CONTEXT_VERSION_MAJOR);
-    minor = glfwGetWindowAttrib(mWindow, GLFW_CONTEXT_VERSION_MINOR);
-    rev = glfwGetWindowAttrib(mWindow, GLFW_CONTEXT_REVISION);
-    printf("OpenGL version recieved: %d.%d.%d\n", major, minor, rev);
-    printf("Supported OpenGL is %s\n", (const char*)glGetString(GL_VERSION));
-    printf("Supported GLSL is %s\n", (const char*)glGetString(GL_SHADING_LANGUAGE_VERSION));
+	int major, minor, rev;
+	major = glfwGetWindowAttrib(mWindow, GLFW_CONTEXT_VERSION_MAJOR);
+	minor = glfwGetWindowAttrib(mWindow, GLFW_CONTEXT_VERSION_MINOR);
+	rev = glfwGetWindowAttrib(mWindow, GLFW_CONTEXT_REVISION);
+	printf("OpenGL version recieved: %d.%d.%d\n", major, minor, rev);
+	printf("Supported OpenGL is %s\n", (const char*)glGetString(GL_VERSION));
+	printf("Supported GLSL is %s\n", (const char*)glGetString(GL_SHADING_LANGUAGE_VERSION));
+
+	return 0;
+}
+
+void init_map()
+{	
+	// Read map
+	map.read_map("res/map.txt");
+	map.read_texture_mapping("res/map_texture_mapping.txt");
+	map.init_texc();
+}
+
+int main(void)
+{
+	int ret_value = init_window();
+	if (ret_value != 0) {
+		return EXIT_FAILURE;
+	}
+
+	init_map();
+	map.print();
 
 	Program program;
 	program.init(vertexSource, fragmentSource, "outColor");
@@ -72,8 +94,6 @@ int main(void)
 
 	VertexArrayObject vao;
 	vao.bind();
-
-	Map map;
 
 	VertexBufferObject vbo_vert;
 	vbo_vert.update(map.vert, getArrayLength(map.vert), 3);
@@ -85,9 +105,9 @@ int main(void)
 	program.bindVertexAttribArray("texcoord", vbo_texc, 2, 0);
 	vbo_texc.bind();
 
-	Texture t_cat;
-	t_cat.load(GL_TEXTURE0, "cat.jpg");
-	glUniform1i(program.uniform("texKitten"), 0);
+	Texture texture_map;
+	texture_map.load(GL_TEXTURE0, "res/map.png");
+	glUniform1i(program.uniform("texMap"), 0);
 
 	// Rendering Loop
 	while (!glfwWindowShouldClose(mWindow)) {

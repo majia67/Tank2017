@@ -203,6 +203,16 @@ void Texture::load(GLenum active_texture, const std::string filename) {
 	unsigned char* image = stbi_load(filename.c_str(), &width, &height, &channels, 0);
 	if (!image) fprintf(stderr, "%s %s\n", "Failed to Load Texture", filename.c_str());
 
+	GLenum format;
+	// Set the Correct Channel Format
+	switch (channels)
+	{
+	case 1: format = GL_ALPHA;     break;
+	case 2: format = GL_LUMINANCE; break;
+	case 3: format = GL_RGB;       break;
+	case 4: format = GL_RGBA;      break;
+	}
+
 	// Bind Texture and Set Filtering Levels
 	glActiveTexture(active_texture);
 	glBindTexture(GL_TEXTURE_2D, id);
@@ -210,7 +220,7 @@ void Texture::load(GLenum active_texture, const std::string filename) {
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, image);
+	glTexImage2D(GL_TEXTURE_2D, 0, format, width, height, 0, format, GL_UNSIGNED_BYTE, image);
 	glGenerateMipmap(GL_TEXTURE_2D);
 
 	// Release image pointer
