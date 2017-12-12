@@ -112,6 +112,7 @@ struct Map
 	{
 		std::ifstream fin;
 		fin.open(filename, std::ifstream::in);
+		assert(fin.is_open());
 		int r, c;
 		fin >> r >> c;
 		assert(r == MAP_ROWS && c == MAP_COLS);

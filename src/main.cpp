@@ -21,55 +21,34 @@ int getArrayLength(T(&)[size]) { return size; }
 
 int init_window()
 {
-	// Initialize the library
-	if (!glfwInit())
-		return -1;
-
-	// Activate supersampling
-	glfwWindowHint(GLFW_SAMPLES, 8);
-
-	// Ensure that we get at least a 3.2 context
-	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
-	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 2);
-
-	// On apple we have to load a core profile with forward compatibility
-#ifdef __APPLE__
+	// Load GLFW and Create a Window
+	glfwInit();
+	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
+	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 4);
 	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 	glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
-#endif
+	glfwWindowHint(GLFW_RESIZABLE, GL_FALSE);
+	mWindow = glfwCreateWindow(SCREEN_WIDTH, SCREEN_HEIGHT, "Tank2017", nullptr, nullptr);
 
-	// Create a windowed mode window and its OpenGL context
-	mWindow = glfwCreateWindow(SCREEN_WIDTH, SCREEN_HEIGHT, "Hello World", NULL, NULL);
-	if (!mWindow)
-	{
-		glfwTerminate();
-		return -1;
+	// Check for Valid Context
+	if (mWindow == nullptr) {
+		fprintf(stderr, "Failed to Create OpenGL Context");
+		return EXIT_FAILURE;
 	}
 
 	// Make the window's context current
 	glfwMakeContextCurrent(mWindow);
 
-#ifndef __APPLE__
-	glewExperimental = true;
-	GLenum err = glewInit();
-	if (GLEW_OK != err)
-	{
-		/* Problem: glewInit failed, something is seriously wrong. */
-		fprintf(stderr, "Error: %s\n", glewGetErrorString(err));
+	// Load OpenGL Functions
+	if (!gladLoadGL()) {
+		printf("Glad can't load!\n");
+		return EXIT_FAILURE;
 	}
-	glGetError(); // pull and savely ignonre unhandled errors like GL_INVALID_ENUM
-	fprintf(stdout, "Status: Using GLEW %s\n", glewGetString(GLEW_VERSION));
-#endif
 
-	int major, minor, rev;
-	major = glfwGetWindowAttrib(mWindow, GLFW_CONTEXT_VERSION_MAJOR);
-	minor = glfwGetWindowAttrib(mWindow, GLFW_CONTEXT_VERSION_MINOR);
-	rev = glfwGetWindowAttrib(mWindow, GLFW_CONTEXT_REVISION);
-	printf("OpenGL version recieved: %d.%d.%d\n", major, minor, rev);
-	printf("Supported OpenGL is %s\n", (const char*)glGetString(GL_VERSION));
-	printf("Supported GLSL is %s\n", (const char*)glGetString(GL_SHADING_LANGUAGE_VERSION));
+	printf("OpenGL %s\n", (const char*)glGetString(GL_VERSION));
+	printf("GLSL %s\n", (const char*)glGetString(GL_SHADING_LANGUAGE_VERSION));
 
-	return 0;
+	return EXIT_SUCCESS;
 }
 
 void init_map()
@@ -82,15 +61,14 @@ void init_map()
 
 int main(void)
 {
-	int ret_value = init_window();
-	if (ret_value != 0) {
+	if (init_window() != EXIT_SUCCESS) {
 		return EXIT_FAILURE;
 	}
 
 	init_map();
 
 	Program program;
-	program.init(vertexSource, fragmentSource, "outColor");
+	program.init(map_vert, map_frag, "outColor");
 	program.bind();
 
 	VertexArrayObject vao;

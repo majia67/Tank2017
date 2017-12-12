@@ -1,50 +1,53 @@
-cmake_minimum_required(VERSION 2.8.12)
+cmake_minimum_required(VERSION 3.0)
 project(Tank2017)
-
-### Output directories
-set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}")
-set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}")
-set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}")
 
 ### Compilation flags: adapt to your needs ###
 if(MSVC)
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /MP /bigobj") ### Enable parallel compilation
-  set(CMAKE_RUNTIME_OUTPUT_DIRECTORY_DEBUG ${CMAKE_BINARY_DIR} )
-  set(CMAKE_RUNTIME_OUTPUT_DIRECTORY_RELEASE ${CMAKE_BINARY_DIR} )
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /W4 /MP /bigobj") ### Enable parallel compilation
 else()
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra -Wpedantic -std=c++11")
+    if(NOT WIN32)
+        set(GLAD_LIBRARIES dl)
+    endif()
 endif()
 
-### Add src to the include directories
-include_directories("${CMAKE_CURRENT_SOURCE_DIR}/src")
+### GLFW3
+option(GLFW_BUILD_DOCS OFF)
+option(GLFW_BUILD_EXAMPLES OFF)
+option(GLFW_BUILD_TESTS OFF)
+add_subdirectory(ext/glfw)
 
-### Add stb for image handling
-include_directories("${CMAKE_CURRENT_SOURCE_DIR}/ext/stb")
+include_directories(include
+	ext/glad/include
+    ext/glfw/include
+    ext/glm
+    ext/stb)
 
-### Add glm for matrices and mathematics
-include_directories("${CMAKE_CURRENT_SOURCE_DIR}/ext/glm")
+file(GLOB VENDORS_SOURCES ext/glad/src/glad.c)
+file(GLOB PROJECT_SOURCES src/*.cpp)
+file(GLOB PROJECT_HEADERS include/*.hpp)
+file(GLOB PROJECT_SHADERS shaders/*.vert
+	shaders/*.frag
+	shaders/*.geom
+	shaders/*.comp)
+file(GLOB PROJECT_CONFIGS CMakeLists.txt Readme.md)
+file(GLOB PROJECT_RESOURCES res/*)
 
-### Compile GLFW3 statically
-set(GLFW_BUILD_EXAMPLES OFF CACHE BOOL " " FORCE)
-set(GLFW_BUILD_TESTS OFF CACHE BOOL " " FORCE)
-set(GLFW_BUILD_DOCS OFF CACHE BOOL " " FORCE)
-set(GLFW_BUILD_INSTALL OFF CACHE BOOL " " FORCE)
-add_subdirectory("${CMAKE_CURRENT_SOURCE_DIR}/ext/glfw" "glfw")
-include_directories("${CMAKE_CURRENT_SOURCE_DIR}/ext/glfw/include")
-set(LIBRARIES "glfw" ${GLFW_LIBRARIES})
+source_group("Headers" FILES ${PROJECT_HEADERS})
+source_group("Shaders" FILES ${PROJECT_SHADERS})
+source_group("Sources" FILES ${PROJECT_SOURCES})
+source_group("Vendors" FILES ${VENDORS_SOURCES})
 
-### On windows, you also need glew
-if((UNIX AND NOT APPLE) OR WIN32)
-  set(GLEW_INSTALL OFF CACHE BOOL " " FORCE)
-  add_subdirectory("${CMAKE_CURRENT_SOURCE_DIR}/ext/glew" "glew")
-  include_directories("${CMAKE_CURRENT_SOURCE_DIR}/ext/glew/include")
-  list(APPEND LIBRARIES "glew")
-endif()
+add_definitions(-DGLFW_INCLUDE_NONE
+                -DPROJECT_SOURCE_DIR=${PROJECT_SOURCE_DIR})
+add_executable(${PROJECT_NAME} ${PROJECT_SOURCES} ${PROJECT_HEADERS}
+                               ${PROJECT_SHADERS} ${PROJECT_CONFIGS}
+                               ${VENDORS_SOURCES})
+target_link_libraries(${PROJECT_NAME} glfw
+                      ${GLFW_LIBRARIES} ${GLAD_LIBRARIES})
+set_target_properties(${PROJECT_NAME} PROPERTIES
+    RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/${PROJECT_NAME})
 
-### Compile all the cpp files in src
-file(GLOB SOURCES
-"${CMAKE_CURRENT_SOURCE_DIR}/src/*.cpp"
-)
-
-add_executable(${PROJECT_NAME}_bin ${SOURCES})
-target_link_libraries(${PROJECT_NAME}_bin ${LIBRARIES})
+### Put resource and shader files into output directory
+file(COPY res DESTINATION ${CMAKE_BINARY_DIR})
+file(COPY shaders DESTINATION ${CMAKE_BINARY_DIR})

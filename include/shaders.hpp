@@ -1,9 +1,7 @@
 #pragma once
 
-#include <GL/glew.h>
-
 // Shader sources
-const GLchar* vertexSource = R"glsl(
+const GLchar* map_vert = R"glsl(
     #version 150 core
 
     in vec2 position;
@@ -18,7 +16,7 @@ const GLchar* vertexSource = R"glsl(
     }
 )glsl";
 
-const GLchar* fragmentSource = R"glsl(
+const GLchar* map_frag = R"glsl(
     #version 150 core
 
     in vec2 Texcoord;
