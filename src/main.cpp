@@ -1,7 +1,7 @@
 // Local Headers
 #include "helpers.hpp"
-#include "shaders.hpp"
 #include "types.hpp"
+#include "utils.hpp"
 
 // System Headers
 #include <GLFW/glfw3.h>
@@ -67,8 +67,12 @@ int main(void)
 
 	init_map();
 
+	std::string map_vert, map_frag;
+	load_shader_file("shaders/map.vert", map_vert);
+	load_shader_file("shaders/map.frag", map_frag);
+
 	Program program;
-	program.init(map_vert, map_frag, "outColor");
+	program.init(map_vert.c_str(), map_frag.c_str(), "outColor");
 	program.bind();
 
 	VertexArrayObject vao;
