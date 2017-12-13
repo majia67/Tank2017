@@ -74,22 +74,25 @@ void ElementBufferObject::update(const GLuint *M, int mRows, int mCols)
 	check_gl_error();
 }
 
-bool Program::init(
-	const std::string &vertex_shader_string,
-	const std::string &fragment_shader_string,
-	const std::string &fragment_data_name)
+Program::Program()
 {
-	using namespace std;
-	vertex_shader = create_shader_helper(GL_VERTEX_SHADER, vertex_shader_string);
-	fragment_shader = create_shader_helper(GL_FRAGMENT_SHADER, fragment_shader_string);
+	program_shader = glCreateProgram();
+	vertex_shader = 0;
+	fragment_shader = 0;
+	geometry_shader = 0;
+}
 
+Program::~Program()
+{
+	if (program_shader != 0) {
+		free();
+	}
+}
+
+bool Program::init(const std::string &fragment_data_name)
+{
 	if (!vertex_shader || !fragment_shader)
 		return false;
-
-	program_shader = glCreateProgram();
-
-	glAttachShader(program_shader, vertex_shader);
-	glAttachShader(program_shader, fragment_shader);
 
 	glBindFragDataLocation(program_shader, 0, fragment_data_name.c_str());
 	glLinkProgram(program_shader);
@@ -101,13 +104,27 @@ bool Program::init(
 	{
 		char buffer[512];
 		glGetProgramInfoLog(program_shader, 512, NULL, buffer);
-		cerr << "Linker error: " << endl << buffer << endl;
+		std::cerr << "Linker error: " << std::endl << buffer << std::endl;
 		program_shader = 0;
 		return false;
 	}
 
 	check_gl_error();
 	return true;
+}
+
+void Program::attach(GLenum type, std::string &shader_string)
+{
+	GLuint shader = create_shader_helper(type, shader_string);
+	glAttachShader(program_shader, shader);
+	check_gl_error();
+
+	switch (type)
+	{
+	case GL_VERTEX_SHADER: vertex_shader = shader; break;
+	case GL_FRAGMENT_SHADER: fragment_shader = shader; break;
+	case GL_GEOMETRY_SHADER: geometry_shader = shader; break;
+	}
 }
 
 void Program::bind()
@@ -162,12 +179,16 @@ void Program::free()
 		glDeleteShader(fragment_shader);
 		fragment_shader = 0;
 	}
+	if (geometry_shader)
+	{
+		glDeleteShader(geometry_shader);
+		geometry_shader = 0;
+	}
 	check_gl_error();
 }
 
 GLuint Program::create_shader_helper(GLint type, const std::string &shader_string)
 {
-	using namespace std;
 	if (shader_string.empty())
 		return (GLuint)0;
 
@@ -183,14 +204,14 @@ GLuint Program::create_shader_helper(GLint type, const std::string &shader_strin
 	{
 		char buffer[512];
 		if (type == GL_VERTEX_SHADER)
-			cerr << "Vertex shader:" << endl;
+			std::cerr << "Vertex shader:" << std::endl;
 		else if (type == GL_FRAGMENT_SHADER)
-			cerr << "Fragment shader:" << endl;
+			std::cerr << "Fragment shader:" << std::endl;
 		else if (type == GL_GEOMETRY_SHADER)
-			cerr << "Geometry shader:" << endl;
-		cerr << shader_string << endl << endl;
+			std::cerr << "Geometry shader:" << std::endl;
+		std::cerr << shader_string << std::endl << std::endl;
 		glGetShaderInfoLog(id, 512, NULL, buffer);
-		cerr << "Error: " << endl << buffer << endl;
+		std::cerr << "Error: " << std::endl << buffer << std::endl;
 		return (GLuint)0;
 	}
 	check_gl_error();
@@ -203,7 +224,7 @@ void Texture::load(GLenum active_texture, const std::string filename) {
 	unsigned char* image = stbi_load(filename.c_str(), &width, &height, &channels, 0);
 	if (!image) fprintf(stderr, "%s %s\n", "Failed to Load Texture", filename.c_str());
 
-	GLenum format;
+	GLenum format = GL_RGB;
 	// Set the Correct Channel Format
 	switch (channels)
 	{

@@ -23,8 +23,8 @@ int init_window()
 {
 	// Load GLFW and Create a Window
 	glfwInit();
-	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
-	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 4);
+	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
+	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
 	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 	glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
 	glfwWindowHint(GLFW_RESIZABLE, GL_FALSE);
@@ -56,6 +56,9 @@ void init_map()
 	// Read map
 	map.read_map("res/map.txt");
 	map.read_texture_mapping("res/map_texture_mapping.txt");
+
+	// Initialize vertices and texture coordinates
+	map.init_vert();
 	map.init_texc();
 }
 
@@ -67,25 +70,29 @@ int main(void)
 
 	init_map();
 
-	std::string map_vert, map_frag;
-	load_shader_file("shaders/map.vert", map_vert);
-	load_shader_file("shaders/map.frag", map_frag);
+	std::string unit_vert, unit_frag, unit_geom;
+	load_shader_file("shaders/unit.vert", unit_vert);
+	load_shader_file("shaders/unit.frag", unit_frag);
+	load_shader_file("shaders/unit.geom", unit_geom);
 
 	Program program;
-	program.init(map_vert.c_str(), map_frag.c_str(), "outColor");
+	program.attach(GL_VERTEX_SHADER, unit_vert);
+	program.attach(GL_FRAGMENT_SHADER, unit_frag);
+	program.attach(GL_GEOMETRY_SHADER, unit_geom);
+	program.init("outColor");
 	program.bind();
 
 	VertexArrayObject vao;
 	vao.bind();
 
 	VertexBufferObject vbo_vert;
-	vbo_vert.update(map.vert, getArrayLength(map.vert), 3);
-	program.bindVertexAttribArray("position", vbo_vert, 3, 0);
+	vbo_vert.update(map.vert, getArrayLength(map.vert), 2);
+	program.bindVertexAttribArray("pos", vbo_vert, 2, 0);
 	vbo_vert.bind();
 
 	VertexBufferObject vbo_texc;
 	vbo_texc.update(map.texc, getArrayLength(map.texc), 2);
-	program.bindVertexAttribArray("texcoord", vbo_texc, 2, 0);
+	program.bindVertexAttribArray("texc", vbo_texc, 2, 0);
 	vbo_texc.bind();
 
 	Texture texture_map;
@@ -99,7 +106,7 @@ int main(void)
 		glClear(GL_COLOR_BUFFER_BIT);
 
 		// Draw the map
-		glDrawArrays(GL_TRIANGLES, 0, getArrayLength(map.vert) / 3);
+		glDrawArrays(GL_LINES, 0, getArrayLength(map.vert) / 2);
 
 		// Flip Buffers and Draw
 		glfwSwapBuffers(mWindow);

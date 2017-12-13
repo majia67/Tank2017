@@ -54,14 +54,16 @@ class Program
 public:
 	GLuint vertex_shader;
 	GLuint fragment_shader;
+	GLuint geometry_shader;
 	GLuint program_shader;
 
-	Program() : vertex_shader(0), fragment_shader(0), program_shader(0) { }
+	Program();
+	~Program();
 
 	// Create a new shader from the specified source strings
-	bool init(const std::string &vertex_shader_string,
-		const std::string &fragment_shader_string,
-		const std::string &fragment_data_name);
+	bool init(const std::string &fragment_data_name);
+
+	void attach(GLenum type, std::string &shader_string);
 
 	// Select this shader for subsequent draw calls
 	void bind();
