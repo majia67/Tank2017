@@ -3,6 +3,7 @@
 #include <cassert>
 #include <fstream>
 #include <utility>
+#include <algorithm>
 
 std::vector<glm::mat2> texture_mapping;
 
@@ -94,6 +95,29 @@ void Tanks::change_direction(int i, Unit_Direction direction)
     }
 
     tanks[i].direction = direction;
+}
+
+void Tanks::move(int i)
+{
+    switch (tanks[i].direction)
+    {
+    case Unit_Direction::up: 
+        tanks[i].upleft.y = std::min(1.0f, tanks[i].upleft.y + TANK_MOVE_STEP);
+        tanks[i].downright.y = tanks[i].upleft.y - BLOCK_WIDTH;
+        break;
+    case Unit_Direction::down:
+        tanks[i].upleft.y = std::max(-1.0f, tanks[i].upleft.y - TANK_MOVE_STEP);
+        tanks[i].downright.y = tanks[i].upleft.y + BLOCK_WIDTH;
+        break;
+    case Unit_Direction::left:
+        tanks[i].upleft.x = std::max(-1.0f, tanks[i].upleft.x - TANK_MOVE_STEP);
+        tanks[i].downright.x = tanks[i].upleft.x + BLOCK_WIDTH;
+        break;
+    case Unit_Direction::right:
+        tanks[i].upleft.x = std::min(1.0f, tanks[i].upleft.x + TANK_MOVE_STEP);
+        tanks[i].downright.x = tanks[i].upleft.x - BLOCK_WIDTH;
+        break;
+    }
 }
 
 void Tanks::refresh_data()

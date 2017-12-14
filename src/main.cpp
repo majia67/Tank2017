@@ -15,8 +15,37 @@ GLFWwindow* mWindow;
 Map map;
 Tanks tanks;
 
+VertexArrayObject vao_tank;
+VertexBufferObject vbo_tank_vert;
+
 template<typename T, int size>
 int getArrayLength(T(&)[size]) { return size; }
+
+void on_tank_move(int i, Unit_Direction direction)
+{
+    tanks.change_direction(i, direction);
+    tanks.move(i);
+    tanks.refresh_data();
+
+    vao_tank.bind();
+    vbo_tank_vert.update(tanks.vert, getArrayLength(tanks.vert), 2);
+}
+
+void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods)
+{
+    if (action != GLFW_PRESS)
+    {
+        return;
+    }
+
+    switch (key)
+    {
+    case GLFW_KEY_UP: on_tank_move(0, Unit_Direction::up); break;
+    case GLFW_KEY_LEFT: on_tank_move(0, Unit_Direction::left); break;
+    case GLFW_KEY_DOWN: on_tank_move(0, Unit_Direction::down); break;
+    case GLFW_KEY_RIGHT: on_tank_move(0, Unit_Direction::right); break;
+    }
+}
 
 int init_window()
 {
@@ -43,6 +72,8 @@ int init_window()
 		printf("Glad can't load!\n");
 		return EXIT_FAILURE;
 	}
+
+    glfwSetKeyCallback(mWindow, key_callback);
 
 	return EXIT_SUCCESS;
 }
@@ -74,29 +105,32 @@ int main(void)
     map.init();
 
 	VertexArrayObject vao_map;
+    vao_map.init();
 	vao_map.bind();
 
-	VertexBufferObject vbo_map_vert;
+    VertexBufferObject vbo_map_vert;
+    vbo_map_vert.init();
 	vbo_map_vert.update(map.vert, getArrayLength(map.vert), 2);
     program.bindVertexAttribArray("pos", vbo_map_vert);
 
 	VertexBufferObject vbo_map_texc;
+    vbo_map_texc.init();
 	vbo_map_texc.update(map.texc, getArrayLength(map.texc), 2);
     program.bindVertexAttribArray("texc", vbo_map_texc);
 
     // Setting tanks
     tanks.init();
     tanks.refresh_data();
-    tanks.print();
 
-    VertexArrayObject vao_tank;
+    vao_tank.init();
     vao_tank.bind();
 
-    VertexBufferObject vbo_tank_vert;
+    vbo_tank_vert.init();
     vbo_tank_vert.update(tanks.vert, getArrayLength(tanks.vert), 2);
     program.bindVertexAttribArray("pos", vbo_tank_vert);
 
     VertexBufferObject vbo_tank_texc;
+    vbo_tank_texc.init();
     vbo_tank_texc.update(tanks.texc, getArrayLength(tanks.texc), 2);
     program.bindVertexAttribArray("texc", vbo_tank_texc);
 

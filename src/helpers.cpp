@@ -9,7 +9,7 @@
 #include <iostream>
 #include <fstream>
 
-VertexArrayObject::VertexArrayObject()
+void VertexArrayObject::init()
 {
 	glGenVertexArrays(1, &id);
 	check_gl_error();
@@ -27,7 +27,7 @@ void VertexArrayObject::free()
 	check_gl_error();
 }
 
-VertexBufferObject::VertexBufferObject()
+void VertexBufferObject::init()
 {
 	glGenBuffers(1, &id);
 }

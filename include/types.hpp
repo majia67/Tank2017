@@ -6,13 +6,15 @@
 
 #define SCREEN_WIDTH 1024
 #define SCREEN_HEIGHT 768
-#define BLOCK_WIDTH (2.0f / BOARD_SIZE);
 #define BOARD_SIZE 11
 #define MAP_ROWS BOARD_SIZE
 #define MAP_COLS BOARD_SIZE
 #define TANK_USER_NUM 1
 #define TANK_ENEMY_NUM 5
 #define TANK_NUM (TANK_USER_NUM + TANK_ENEMY_NUM)
+
+const static float BLOCK_WIDTH = 2.0f / BOARD_SIZE;
+const static float TANK_MOVE_STEP = BLOCK_WIDTH / 4.0f;
 
 enum class Unit_Type
 {
@@ -64,6 +66,8 @@ public:
     void init_texc();
 
     void change_direction(int i, Unit_Direction direction);
+
+    void move(int i);
 
     void refresh_data();
 

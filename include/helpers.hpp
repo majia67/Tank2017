@@ -10,7 +10,7 @@ class VertexArrayObject
 public:
 	GLuint id;
 
-	VertexArrayObject();
+	void init();
 
 	// Select this VAO for subsequent draw calls
 	void bind();
@@ -24,7 +24,7 @@ public:
 	GLuint id;
 	int attrib_num;
 
-	VertexBufferObject();
+    void init();
 
 	// Updates the VBO with a 1D array M
 	void update(const GLfloat *M, int size, int attr_num);
