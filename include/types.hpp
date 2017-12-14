@@ -2,6 +2,8 @@
 
 #include <string>
 #include <vector>
+#include <map>
+#include <set>
 #include <glm/glm.hpp>
 
 #define SCREEN_WIDTH 1024
@@ -41,6 +43,7 @@ enum class Unit_Direction
 class Unit
 {
 public:
+    int id;
 	Unit_Type type;
     Unit_Direction direction;
     bool is_visible;
@@ -49,7 +52,12 @@ public:
 
     Unit();
     Unit(Unit_Type unit_type);
+
+    void change_direction(Unit_Direction direction);
+
+    bool is_overlap(Unit &unit);
 };
+static int unit_id_factory = 0;
 
 class Tanks
 {
@@ -93,4 +101,21 @@ public:
 	void read_texture_mapping(std::string filename);
 
 	void print();
+};
+
+class Collision_Grid
+{
+public:
+    std::map<int, Unit> grid[MAP_ROWS * MAP_COLS];
+
+    int get_grid_index(float x, float y);
+    std::set<int> get_grids_touched(Unit &unit);
+
+    void put_into_grid(Unit &unit);
+
+    void remove_from_grid(Unit &unit);
+
+    std::vector<Unit> check_collision(Unit &unit);
+
+    void print();
 };

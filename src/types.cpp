@@ -11,10 +11,71 @@ Unit::Unit() : Unit(Unit_Type::bg_gray) { }
 
 Unit::Unit(Unit_Type unit_type) : type(unit_type)
 {
+    id = unit_id_factory++;
     direction = Unit_Direction::up;
     is_visible = false;
     upleft = glm::vec2(0.0f, 0.0f);
     downright = glm::vec2(0.0f, 0.0f);
+}
+
+void Unit::change_direction(Unit_Direction direction)
+{
+    if (this->direction == direction) {
+        return;
+    }
+
+    if (this->direction == Unit_Direction::up && direction == Unit_Direction::down ||
+        this->direction == Unit_Direction::down && direction == Unit_Direction::up ||
+        this->direction == Unit_Direction::left && direction == Unit_Direction::right ||
+        this->direction == Unit_Direction::right && direction == Unit_Direction::left)
+    {
+        std::swap(this->upleft, this->downright);
+    }
+    else
+        if (this->direction == Unit_Direction::up && direction == Unit_Direction::right ||
+            this->direction == Unit_Direction::right && direction == Unit_Direction::up ||
+            this->direction == Unit_Direction::down && direction == Unit_Direction::left ||
+            this->direction == Unit_Direction::left && direction == Unit_Direction::down)
+        {
+            std::swap(this->upleft.x, this->downright.x);
+        }
+        else
+            if (this->direction == Unit_Direction::up && direction == Unit_Direction::left ||
+                this->direction == Unit_Direction::left && direction == Unit_Direction::up ||
+                this->direction == Unit_Direction::down && direction == Unit_Direction::right ||
+                this->direction == Unit_Direction::right && direction == Unit_Direction::down)
+            {
+                std::swap(this->upleft.y, this->downright.y);
+            }
+
+    this->direction = direction;
+}
+
+bool Unit::is_overlap(Unit &unit)
+{
+    // ref: http://www.geeksforgeeks.org/find-two-rectangles-overlap/
+
+    glm::vec2 l1(std::min(this->upleft.x, this->downright.x),
+        std::max(this->upleft.y, this->downright.y));
+    glm::vec2 r1(std::max(this->upleft.x, this->downright.x),
+        std::min(this->upleft.y, this->downright.y));
+
+    glm::vec2 l2(std::min(unit.upleft.x, unit.downright.x),
+        std::max(unit.upleft.y, unit.downright.y));
+    glm::vec2 r2(std::max(unit.upleft.x, unit.downright.x),
+        std::min(unit.upleft.y, unit.downright.y));
+
+    // if one unit is on the left side of the other
+    if (r1.x < l2.x || r2.x < l1.x) {
+        return false;
+    }
+
+    // if one unit is on the top of the other
+    if (r1.y > l2.y || r2.y > l1.y) {
+        return false;
+    }
+
+    return true;
 }
 
 void Tanks::init()
@@ -66,35 +127,7 @@ void Tanks::init_texc()
 
 void Tanks::change_direction(int i, Unit_Direction direction)
 {
-    if (tanks[i].direction == direction) {
-        return;
-    }
-
-    if (tanks[i].direction == Unit_Direction::up && direction == Unit_Direction::down ||
-        tanks[i].direction == Unit_Direction::down && direction == Unit_Direction::up ||
-        tanks[i].direction == Unit_Direction::left && direction == Unit_Direction::right ||
-        tanks[i].direction == Unit_Direction::right && direction == Unit_Direction::left)
-    {
-        std::swap(tanks[i].upleft, tanks[i].downright);
-    }
-    else 
-    if (tanks[i].direction == Unit_Direction::up && direction == Unit_Direction::right ||
-        tanks[i].direction == Unit_Direction::right && direction == Unit_Direction::up ||
-        tanks[i].direction == Unit_Direction::down && direction == Unit_Direction::left ||
-        tanks[i].direction == Unit_Direction::left && direction == Unit_Direction::down)
-    {
-        std::swap(tanks[i].upleft.x, tanks[i].downright.x);
-    }
-    else
-    if (tanks[i].direction == Unit_Direction::up && direction == Unit_Direction::left ||
-        tanks[i].direction == Unit_Direction::left && direction == Unit_Direction::up ||
-        tanks[i].direction == Unit_Direction::down && direction == Unit_Direction::right ||
-        tanks[i].direction == Unit_Direction::right && direction == Unit_Direction::down)
-    {
-        std::swap(tanks[i].upleft.y, tanks[i].downright.y);
-    }
-
-    tanks[i].direction = direction;
+    tanks[i].change_direction(direction);
 }
 
 void Tanks::move(int i)
@@ -246,4 +279,62 @@ void Map::print()
 			}
 		}
 	}
+}
+
+int Collision_Grid::get_grid_index(float x, float y)
+{
+    int i = std::min(int((x + 1.0f) / BLOCK_WIDTH), MAP_ROWS - 1);
+    int j = std::min(int((y + 1.0f) / BLOCK_WIDTH), MAP_COLS - 1);
+    return i * MAP_COLS + j;
+}
+
+std::set<int> Collision_Grid::get_grids_touched(Unit &unit)
+{
+    std::set<int> grids_touched;
+
+    grids_touched.insert(get_grid_index(unit.upleft.x, unit.upleft.y));
+    grids_touched.insert(get_grid_index(unit.upleft.x, unit.downright.y));
+    grids_touched.insert(get_grid_index(unit.downright.x, unit.upleft.y));
+    grids_touched.insert(get_grid_index(unit.downright.x, unit.downright.y));
+
+    return grids_touched;
+}
+
+void Collision_Grid::put_into_grid(Unit &unit)
+{
+    for (int grid_idx : get_grids_touched(unit)){
+        grid[grid_idx][unit.id] = unit;
+    }
+}
+
+void Collision_Grid::remove_from_grid(Unit &unit)
+{
+    for (int grid_idx : get_grids_touched(unit)) {
+        grid[grid_idx].erase(unit.id);
+    }
+}
+
+std::vector<Unit> Collision_Grid::check_collision(Unit &unit)
+{
+    std::vector<Unit> unit_collides;
+
+    for (int grid_idx : get_grids_touched(unit)) {
+        for (std::pair<int, Unit> kv : grid[grid_idx]) {
+            if (unit.id != kv.first && unit.is_overlap(kv.second)) {
+                unit_collides.push_back(kv.second);
+            }
+        }
+    }
+
+    return unit_collides;
+}
+
+void Collision_Grid::print()
+{
+    for (int i = 0; i < MAP_ROWS * MAP_COLS; i++){
+        printf("Grid %d:\n", i);
+        for (std::pair<int, Unit> kv : grid[i]) {
+            printf("Unit %d, Unit Type %d\n", kv.first, kv.second.type);
+        }
+    }
 }
