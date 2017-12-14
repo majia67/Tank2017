@@ -6,9 +6,13 @@
 
 #define SCREEN_WIDTH 1024
 #define SCREEN_HEIGHT 768
+#define BLOCK_WIDTH (2.0f / BOARD_SIZE);
 #define BOARD_SIZE 11
 #define MAP_ROWS BOARD_SIZE
 #define MAP_COLS BOARD_SIZE
+#define TANK_USER_NUM 1
+#define TANK_ENEMY_NUM 5
+#define TANK_NUM (TANK_USER_NUM + TANK_ENEMY_NUM)
 
 enum class Unit_Type
 {
@@ -24,11 +28,46 @@ enum class Unit_Type
 	tank_user = 9,
 };
 
+enum class Unit_Direction
+{
+    up = 0,
+    right = 1,
+    down = 2,
+    left = 3,
+};
+
 class Unit
 {
 public:
 	Unit_Type type;
-	float pos[2];
+    Unit_Direction direction;
+    bool is_visible;
+	glm::vec2 upleft;
+	glm::vec2 downright;
+
+    Unit();
+    Unit(Unit_Type unit_type);
+};
+
+class Tanks
+{
+public:
+    float vert[TANK_NUM * 2 * 2];
+    float texc[TANK_NUM * 2 * 2];
+
+    Unit tanks[TANK_NUM];
+
+    void init();
+
+    void init_tank(int i, int row, int col);
+
+    void init_texc();
+
+    void change_direction(int i, Unit_Direction direction);
+
+    void refresh_data();
+
+    void print();
 };
 
 class Map
@@ -36,8 +75,11 @@ class Map
 public:
 	float vert[MAP_ROWS * MAP_COLS * 2 * 2];
 	float texc[MAP_ROWS * MAP_COLS * 2 * 2];
+
 	Unit_Type unit_types[MAP_ROWS][MAP_COLS];
 	
+    void init();
+
 	void init_vert();
 
 	void init_texc();

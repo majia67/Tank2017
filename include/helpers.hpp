@@ -11,10 +11,11 @@ public:
 	GLuint id;
 
 	VertexArrayObject();
-	~VertexArrayObject();
 
 	// Select this VAO for subsequent draw calls
 	void bind();
+
+	void free();
 };
 
 class VertexBufferObject
@@ -24,13 +25,15 @@ public:
 	int attrib_num;
 
 	VertexBufferObject();
-	~VertexBufferObject();
 
 	// Updates the VBO with a 1D array M
 	void update(const GLfloat *M, int size, int attr_num);
+    void update(const GLint *M, int size, int attr_num);
 
 	// Select this VBO for subsequent draw calls
 	void bind();
+
+	void free();
 };
 
 class ElementBufferObject
@@ -39,13 +42,14 @@ public:
 	GLuint id;
 
 	ElementBufferObject();
-	~ElementBufferObject();
 
 	// Updates the EBO with a 1D array M
 	void update(const GLuint *M, int mRows, int mCols);
 
 	// Select this EBO for subsequent draw calls
 	void bind();
+
+	void free();
 };
 
 // This class wraps an OpenGL program composed of two shaders
@@ -58,7 +62,6 @@ public:
 	GLuint program_shader;
 
 	Program();
-	~Program();
 
 	// Create a new shader from the specified source strings
 	bool init(const std::string &fragment_data_name);
@@ -78,7 +81,7 @@ public:
 	GLint uniform(const std::string &name) const;
 
 	// Bind a per-vertex array attribute
-	GLint bindVertexAttribArray(const std::string &name, VertexBufferObject& VBO, GLint attrib_num, GLint offset) const;
+	GLint bindVertexAttribArray(const std::string &name, VertexBufferObject& VBO) const;
 
 	GLuint create_shader_helper(GLint type, const std::string &shader_string);
 

@@ -13,8 +13,7 @@
 
 GLFWwindow* mWindow;
 Map map;
-Unit tank_user;
-std::vector<Unit> tank_enemies;
+Tanks tanks;
 
 template<typename T, int size>
 int getArrayLength(T(&)[size]) { return size; }
@@ -45,30 +44,17 @@ int init_window()
 		return EXIT_FAILURE;
 	}
 
-	printf("OpenGL %s\n", (const char*)glGetString(GL_VERSION));
-	printf("GLSL %s\n", (const char*)glGetString(GL_SHADING_LANGUAGE_VERSION));
-
 	return EXIT_SUCCESS;
-}
-
-void init_map()
-{	
-	// Read map
-	map.read_map("res/map.txt");
-	map.read_texture_mapping("res/map_texture_mapping.txt");
-
-	// Initialize vertices and texture coordinates
-	map.init_vert();
-	map.init_texc();
 }
 
 int main(void)
 {
-	if (init_window() != EXIT_SUCCESS) {
+    if (init_window() != EXIT_SUCCESS) {
 		return EXIT_FAILURE;
 	}
 
-	init_map();
+    printf("OpenGL %s\n", (const char*)glGetString(GL_VERSION));
+    printf("GLSL %s\n", (const char*)glGetString(GL_SHADING_LANGUAGE_VERSION));
 
 	std::string unit_vert, unit_frag, unit_geom;
 	load_shader_file("shaders/unit.vert", unit_vert);
@@ -82,18 +68,37 @@ int main(void)
 	program.init("outColor");
 	program.bind();
 
-	VertexArrayObject vao;
-	vao.bind();
+    // Setting map
+    map.read_map("res/map.txt");
+    map.read_texture_mapping("res/map_texture_mapping.txt");
+    map.init();
 
-	VertexBufferObject vbo_vert;
-	vbo_vert.update(map.vert, getArrayLength(map.vert), 2);
-	program.bindVertexAttribArray("pos", vbo_vert, 2, 0);
-	vbo_vert.bind();
+	VertexArrayObject vao_map;
+	vao_map.bind();
 
-	VertexBufferObject vbo_texc;
-	vbo_texc.update(map.texc, getArrayLength(map.texc), 2);
-	program.bindVertexAttribArray("texc", vbo_texc, 2, 0);
-	vbo_texc.bind();
+	VertexBufferObject vbo_map_vert;
+	vbo_map_vert.update(map.vert, getArrayLength(map.vert), 2);
+    program.bindVertexAttribArray("pos", vbo_map_vert);
+
+	VertexBufferObject vbo_map_texc;
+	vbo_map_texc.update(map.texc, getArrayLength(map.texc), 2);
+    program.bindVertexAttribArray("texc", vbo_map_texc);
+
+    // Setting tanks
+    tanks.init();
+    tanks.refresh_data();
+    tanks.print();
+
+    VertexArrayObject vao_tank;
+    vao_tank.bind();
+
+    VertexBufferObject vbo_tank_vert;
+    vbo_tank_vert.update(tanks.vert, getArrayLength(tanks.vert), 2);
+    program.bindVertexAttribArray("pos", vbo_tank_vert);
+
+    VertexBufferObject vbo_tank_texc;
+    vbo_tank_texc.update(tanks.texc, getArrayLength(tanks.texc), 2);
+    program.bindVertexAttribArray("texc", vbo_tank_texc);
 
 	Texture texture_map;
 	texture_map.load(GL_TEXTURE0, "res/map.png");
@@ -106,7 +111,12 @@ int main(void)
 		glClear(GL_COLOR_BUFFER_BIT);
 
 		// Draw the map
+        vao_map.bind();
 		glDrawArrays(GL_LINES, 0, getArrayLength(map.vert) / 2);
+
+        // Draw the tanks
+        vao_tank.bind();
+        glDrawArrays(GL_LINES, 0, getArrayLength(tanks.vert) / 2);
 
 		// Flip Buffers and Draw
 		glfwSwapBuffers(mWindow);

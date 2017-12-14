@@ -12,11 +12,7 @@
 VertexArrayObject::VertexArrayObject()
 {
 	glGenVertexArrays(1, &id);
-}
-
-VertexArrayObject::~VertexArrayObject()
-{
-	glDeleteVertexArrays(1, &id);
+	check_gl_error();
 }
 
 void VertexArrayObject::bind()
@@ -25,9 +21,9 @@ void VertexArrayObject::bind()
 	check_gl_error();
 }
 
-void VertexBufferObject::bind()
+void VertexArrayObject::free()
 {
-	glBindBuffer(GL_ARRAY_BUFFER, id);
+	glDeleteVertexArrays(1, &id);
 	check_gl_error();
 }
 
@@ -36,7 +32,13 @@ VertexBufferObject::VertexBufferObject()
 	glGenBuffers(1, &id);
 }
 
-VertexBufferObject::~VertexBufferObject()
+void VertexBufferObject::bind()
+{
+	glBindBuffer(GL_ARRAY_BUFFER, id);
+	check_gl_error();
+}
+
+void VertexBufferObject::free()
 {
 	glDeleteBuffers(1, &id);
 }
@@ -50,14 +52,18 @@ void VertexBufferObject::update(const GLfloat *M, int size, int attr_num)
 	check_gl_error();
 }
 
+void VertexBufferObject::update(const GLint *M, int size, int attr_num)
+{
+    assert(id != 0);
+    glBindBuffer(GL_ARRAY_BUFFER, id);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(GLint) * size, M, GL_STATIC_DRAW);
+    attrib_num = attr_num;
+    check_gl_error();
+}
+
 ElementBufferObject::ElementBufferObject()
 {
 	glGenBuffers(1, &id);
-}
-
-ElementBufferObject::~ElementBufferObject()
-{
-	glDeleteBuffers(1, &id);
 }
 
 void ElementBufferObject::bind()
@@ -74,19 +80,17 @@ void ElementBufferObject::update(const GLuint *M, int mRows, int mCols)
 	check_gl_error();
 }
 
+void ElementBufferObject::free()
+{
+	glDeleteBuffers(1, &id);
+}
+
 Program::Program()
 {
 	program_shader = glCreateProgram();
 	vertex_shader = 0;
 	fragment_shader = 0;
 	geometry_shader = 0;
-}
-
-Program::~Program()
-{
-	if (program_shader != 0) {
-		free();
-	}
 }
 
 bool Program::init(const std::string &fragment_data_name)
@@ -143,8 +147,7 @@ GLint Program::uniform(const std::string &name) const
 	return glGetUniformLocation(program_shader, name.c_str());
 }
 
-GLint Program::bindVertexAttribArray(
-	const std::string &name, VertexBufferObject& VBO, GLint attrib_num, GLint offset) const
+GLint Program::bindVertexAttribArray(const std::string &name, VertexBufferObject& VBO) const
 {
 	GLint id = attrib(name);
 	if (id < 0)
@@ -156,7 +159,7 @@ GLint Program::bindVertexAttribArray(
 	}
 	VBO.bind();
 	glEnableVertexAttribArray(id);
-	glVertexAttribPointer(id, attrib_num, GL_FLOAT, GL_FALSE, VBO.attrib_num * sizeof(GLfloat), (void*)(offset * sizeof(GLfloat)));
+	glVertexAttribPointer(id, VBO.attrib_num, GL_FLOAT, GL_FALSE, 0, 0);
 	check_gl_error();
 
 	return id;
