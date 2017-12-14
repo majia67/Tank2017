@@ -16,11 +16,17 @@ void main()
 	fTexc = vTexc[0];
 	EmitVertex();
 
-	gl_Position = vec4(p2.x, p1.y, 0.0, 1.0);
+	if ((p1.x - p2.x) * (p1.y - p2.y) < 0)
+		gl_Position = vec4(p2.x, p1.y, 0.0, 1.0);
+	else
+		gl_Position = vec4(p1.x, p2.y, 0.0, 1.0);
 	fTexc = vec2(vTexc[1].x, vTexc[0].y);
 	EmitVertex();
-
-	gl_Position = vec4(p1.x, p2.y, 0.0, 1.0);
+	
+	if ((p1.x - p2.x) * (p1.y - p2.y) < 0)
+		gl_Position = vec4(p1.x, p2.y, 0.0, 1.0);
+	else
+		gl_Position = vec4(p2.x, p1.y, 0.0, 1.0);
 	fTexc = vec2(vTexc[0].x, vTexc[1].y);
 	EmitVertex();
 
