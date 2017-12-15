@@ -14,6 +14,7 @@
 GLFWwindow* mWindow;
 Map map;
 Tanks tanks;
+Collision_Grid coll_grid;
 
 VertexArrayObject vao_tank;
 VertexBufferObject vbo_tank_vert;
@@ -23,8 +24,20 @@ int getArrayLength(T(&)[size]) { return size; }
 
 void on_tank_move(int i, Unit_Direction direction)
 {
-    tanks.change_direction(i, direction);
-    tanks.move(i);
+    if (tanks.tank[i].change_direction(direction) == false)
+    {
+        Tank dummy = tanks.tank[i];
+        dummy.move();
+
+        // Collision check
+        std::vector<Unit> coll_units = coll_grid.check_collision(dummy);
+        if (coll_units.size() > 0) {
+            return;
+        }
+        else {
+            tanks.tank[i].move();
+        }
+    }
     tanks.refresh_data();
 
     vao_tank.bind();
@@ -99,10 +112,18 @@ int main(void)
 	program.init("outColor");
 	program.bind();
 
+    // Initialize texture
+    std::vector<glm::mat2> texture_mapping;
+    read_texture_mapping("res/map_texture_mapping.txt", texture_mapping);
+
+    Texture texture_map;
+    texture_map.load(GL_TEXTURE0, "res/map.png");
+    glUniform1i(program.uniform("texMap"), 0);
+
     // Setting map
     map.read_map("res/map.txt");
-    map.read_texture_mapping("res/map_texture_mapping.txt");
-    map.init();
+    map.init_texc(texture_mapping);
+    map.refresh_data();
 
 	VertexArrayObject vao_map;
     vao_map.init();
@@ -120,6 +141,7 @@ int main(void)
 
     // Setting tanks
     tanks.init();
+    tanks.init_texc(texture_mapping);
     tanks.refresh_data();
 
     vao_tank.init();
@@ -134,9 +156,24 @@ int main(void)
     vbo_tank_texc.update(tanks.texc, getArrayLength(tanks.texc), 2);
     program.bindVertexAttribArray("texc", vbo_tank_texc);
 
-	Texture texture_map;
-	texture_map.load(GL_TEXTURE0, "res/map.png");
-	glUniform1i(program.uniform("texMap"), 0);
+    // Setting collision grid
+    // Map units
+    for (int i = 0; i < MAP_ROWS; i++) {
+        for (int j = 0; j < MAP_COLS; j++) {
+            if (map.block[i][j].type == Unit_Type::brick ||
+                map.block[i][j].type == Unit_Type::concrete ||
+                map.block[i][j].type == Unit_Type::sea)
+            {
+                coll_grid.put_into_grid(map.block[i][j]);
+            }
+        }
+    }
+    // Tanks
+    for (int i = 0; i < TANK_NUM; i++) {
+        if (tanks.tank[i].is_visible) {
+            coll_grid.put_into_grid(tanks.tank[i]);
+        }
+    }
 
 	// Rendering Loop
 	while (!glfwWindowShouldClose(mWindow)) {

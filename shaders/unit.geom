@@ -17,8 +17,10 @@ void main()
 	EmitVertex();
 
 	if ((p1.x - p2.x) * (p1.y - p2.y) < 0)
+		// Unit direction is up or down
 		gl_Position = vec4(p2.x, p1.y, 0.0, 1.0);
 	else
+		// Unit direction is left or right
 		gl_Position = vec4(p1.x, p2.y, 0.0, 1.0);
 	fTexc = vec2(vTexc[1].x, vTexc[0].y);
 	EmitVertex();

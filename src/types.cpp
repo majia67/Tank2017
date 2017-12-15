@@ -5,23 +5,31 @@
 #include <utility>
 #include <algorithm>
 
-std::vector<glm::mat2> texture_mapping;
-
-Unit::Unit() : Unit(Unit_Type::bg_gray) { }
-
-Unit::Unit(Unit_Type unit_type) : type(unit_type)
+Unit::Unit()
 {
-    id = unit_id_factory++;
     direction = Unit_Direction::up;
+    id = unit_id_factory++;
     is_visible = false;
-    upleft = glm::vec2(0.0f, 0.0f);
-    downright = glm::vec2(0.0f, 0.0f);
 }
 
-void Unit::change_direction(Unit_Direction direction)
+void Unit::init(Unit_Type unit_type, int row, int col)
+{
+    type = unit_type;
+    is_visible = true;
+
+    // set the upper left corner
+    upleft.x = -1.0f + col * BLOCK_WIDTH;
+    upleft.y = 1.0f - row * BLOCK_WIDTH;
+
+    // set the lower right corner
+    downright.x = -1.0f + (col + 1) * BLOCK_WIDTH;
+    downright.y = 1.0f - (row + 1) * BLOCK_WIDTH;
+}
+
+bool Unit::change_direction(Unit_Direction direction)
 {
     if (this->direction == direction) {
-        return;
+        return false;
     }
 
     if (this->direction == Unit_Direction::up && direction == Unit_Direction::down ||
@@ -49,6 +57,8 @@ void Unit::change_direction(Unit_Direction direction)
             }
 
     this->direction = direction;
+
+    return true;
 }
 
 bool Unit::is_overlap(Unit &unit)
@@ -66,54 +76,69 @@ bool Unit::is_overlap(Unit &unit)
         std::min(unit.upleft.y, unit.downright.y));
 
     // if one unit is on the left side of the other
-    if (r1.x < l2.x || r2.x < l1.x) {
+    if (r1.x <= l2.x || r2.x <= l1.x) {
         return false;
     }
 
     // if one unit is on the top of the other
-    if (r1.y > l2.y || r2.y > l1.y) {
+    if (r1.y >= l2.y || r2.y >= l1.y) {
         return false;
     }
 
     return true;
 }
 
+void Tank::init(Unit_Type unit_type, int row, int col)
+{
+    Unit::init(unit_type, row, col);
+
+    // set the upper left corner
+    upleft.x += TANK_WIDTH_DELTA;
+    upleft.y -= TANK_WIDTH_DELTA;
+
+    // set the lower right corner
+    downright.x -= TANK_WIDTH_DELTA;
+    downright.y += TANK_WIDTH_DELTA;
+}
+
+void Tank::move()
+{
+    switch (direction)
+    {
+    case Unit_Direction::up:
+        upleft.y = std::min(1.0f, upleft.y + TANK_MOVE_STEP);
+        downright.y = upleft.y - TANK_WIDTH;
+        break;
+    case Unit_Direction::down:
+        upleft.y = std::max(-1.0f, upleft.y - TANK_MOVE_STEP);
+        downright.y = upleft.y + TANK_WIDTH;
+        break;
+    case Unit_Direction::left:
+        upleft.x = std::max(-1.0f, upleft.x - TANK_MOVE_STEP);
+        downright.x = upleft.x + TANK_WIDTH;
+        break;
+    case Unit_Direction::right:
+        upleft.x = std::min(1.0f, upleft.x + TANK_MOVE_STEP);
+        downright.x = upleft.x - TANK_WIDTH;
+        break;
+    }
+}
+
 void Tanks::init()
 {
     // Initialize the user tank
-    tanks[0] = Unit(Unit_Type::tank_user);
-    init_tank(0, MAP_ROWS - 1, 3);
+    tank[0].init(Unit_Type::tank_user, MAP_ROWS - 1, 3);
 
     // Initialize the enemy tank
-    for (int i = 1; i < TANK_NUM; i++) {
-        tanks[i] = Unit(Unit_Type::tank_enemy);
-    }
-    init_tank(1, 0, 0);
-    change_direction(1, Unit_Direction::down);
-
-    // Initialize texture coordinates (which does not change during the game)
-    init_texc();
+    tank[1].init(Unit_Type::tank_enemy, 0, 0);
+    tank[1].change_direction(Unit_Direction::down);
 }
 
-void Tanks::init_tank(int i, int row, int col)
-{
-    tanks[i].direction = Unit_Direction::up;
-    tanks[i].is_visible = true;
-
-    // set the upper left corner
-    tanks[i].upleft.x = -1.0f + col * BLOCK_WIDTH;
-    tanks[i].upleft.y = 1.0f - row * BLOCK_WIDTH;
-
-    // set the lower right corner
-    tanks[i].downright.x = -1.0f + (col + 1) * BLOCK_WIDTH;
-    tanks[i].downright.y = 1.0f - (row + 1) * BLOCK_WIDTH;
-}
-
-void Tanks::init_texc()
+void Tanks::init_texc(std::vector<glm::mat2> &texture_mapping)
 {
     for (int i = 0; i < TANK_NUM; i++) {
         int st = i * 2 * 2;
-        int unit_type = static_cast<int>(tanks[i].type);
+        int unit_type = static_cast<int>(tank[i].type);
 
         // set the upper left corner
         texc[st] = texture_mapping[unit_type][0].x;
@@ -125,43 +150,15 @@ void Tanks::init_texc()
     }
 }
 
-void Tanks::change_direction(int i, Unit_Direction direction)
-{
-    tanks[i].change_direction(direction);
-}
-
-void Tanks::move(int i)
-{
-    switch (tanks[i].direction)
-    {
-    case Unit_Direction::up: 
-        tanks[i].upleft.y = std::min(1.0f, tanks[i].upleft.y + TANK_MOVE_STEP);
-        tanks[i].downright.y = tanks[i].upleft.y - BLOCK_WIDTH;
-        break;
-    case Unit_Direction::down:
-        tanks[i].upleft.y = std::max(-1.0f, tanks[i].upleft.y - TANK_MOVE_STEP);
-        tanks[i].downright.y = tanks[i].upleft.y + BLOCK_WIDTH;
-        break;
-    case Unit_Direction::left:
-        tanks[i].upleft.x = std::max(-1.0f, tanks[i].upleft.x - TANK_MOVE_STEP);
-        tanks[i].downright.x = tanks[i].upleft.x + BLOCK_WIDTH;
-        break;
-    case Unit_Direction::right:
-        tanks[i].upleft.x = std::min(1.0f, tanks[i].upleft.x + TANK_MOVE_STEP);
-        tanks[i].downright.x = tanks[i].upleft.x - BLOCK_WIDTH;
-        break;
-    }
-}
-
 void Tanks::refresh_data()
 {
     for (int i = 0; i < TANK_NUM; i++)
     {
         int st = i * 2 * 2;
-        vert[st] = tanks[i].upleft.x;
-        vert[st + 1] = tanks[i].upleft.y;
-        vert[st + 2] = tanks[i].downright.x;
-        vert[st + 3] = tanks[i].downright.y;
+        vert[st] = tank[i].upleft.x;
+        vert[st + 1] = tank[i].upleft.y;
+        vert[st + 2] = tank[i].downright.x;
+        vert[st + 3] = tank[i].downright.y;
     }
 }
 
@@ -182,37 +179,13 @@ void Tanks::print()
     }
 }
 
-void Map::init()
-{
-    init_vert();
-    init_texc();
-}
-
-void Map::init_vert()
-{
-	// Initialize vertices
-	for (int i = 0; i < MAP_ROWS; i++) {
-		for (int j = 0; j < MAP_COLS; j++) {
-			int st = (i * MAP_COLS + j) * 2 * 2;
-
-			// set the upper left corner
-			vert[st] = -1.0f + j * BLOCK_WIDTH;
-			vert[st + 1] = 1.0f - i * BLOCK_WIDTH;
-			
-			// set the lower right corner
-			vert[st + 2] = -1.0f + (j + 1) * BLOCK_WIDTH;
-			vert[st + 3] = 1.0f - (i + 1) * BLOCK_WIDTH;
-		}
-	}
-}
-
-void Map::init_texc()
+void Map::init_texc(std::vector<glm::mat2> &texture_mapping)
 {
 	// Initialize texture coordinates
 	for (int i = 0; i < MAP_ROWS; i++) {
 		for (int j = 0; j < MAP_COLS; j++) {
 			int st = (i * MAP_COLS + j) * 2 * 2;
-			int unit_type = static_cast<int>(unit_types[i][j]);
+			int unit_type = static_cast<int>(block[i][j].type);
 
 			// set the upper left corner
 			texc[st] = texture_mapping[unit_type][0].x;
@@ -238,27 +211,29 @@ void Map::read_map(std::string filename)
 		for (int j = 0; j < c; j++) {
 			int type;
 			fin >> type;
-			unit_types[i][j] = static_cast<Unit_Type>(type);
+            block[i][j].init(static_cast<Unit_Type>(type), i, j);
 		}
 	}
 
 	fin.close();
 }
 
-void Map::read_texture_mapping(std::string filename)
+void Map::refresh_data()
 {
-	std::ifstream fin;
-	fin.open(filename, std::ifstream::in);
-	int num;
-	fin >> num;
+    // Initialize vertices
+    for (int i = 0; i < MAP_ROWS; i++) {
+        for (int j = 0; j < MAP_COLS; j++) {
+            int st = (i * MAP_COLS + j) * 2 * 2;
 
-	for (int i = 0; i < num; i++) {
-		glm::mat2 uv;
-		fin >> uv[0].x >> uv[0].y >> uv[1].x >> uv[1].y;
-		texture_mapping.push_back(uv);
-	}
+            // set the upper left corner
+            vert[st] = block[i][j].upleft.x;
+            vert[st + 1] = block[i][j].upleft.y;
 
-	fin.close();
+            // set the lower right corner
+            vert[st + 2] = block[i][j].downright.x;
+            vert[st + 3] = block[i][j].downright.y;
+        }
+    }
 }
 
 void Map::print()
@@ -283,8 +258,8 @@ void Map::print()
 
 int Collision_Grid::get_grid_index(float x, float y)
 {
-    int i = std::min(int((x + 1.0f) / BLOCK_WIDTH), MAP_ROWS - 1);
-    int j = std::min(int((y + 1.0f) / BLOCK_WIDTH), MAP_COLS - 1);
+    int i = std::min(int((y - 1.0f) / -BLOCK_WIDTH), MAP_ROWS - 1);
+    int j = std::min(int((x + 1.0f) / BLOCK_WIDTH), MAP_COLS - 1);
     return i * MAP_COLS + j;
 }
 
@@ -302,9 +277,18 @@ std::set<int> Collision_Grid::get_grids_touched(Unit &unit)
 
 void Collision_Grid::put_into_grid(Unit &unit)
 {
-    for (int grid_idx : get_grids_touched(unit)){
+#ifdef DEBUG
+    printf("Unit %d type %d touches grid:", unit.id, unit.type);
+    for (int grid_idx : get_grids_touched(unit)) {
+        grid[grid_idx][unit.id] = unit;
+        printf("\t%d", grid_idx);
+    }
+    printf("\n");
+#else
+    for (int grid_idx : get_grids_touched(unit)) {
         grid[grid_idx][unit.id] = unit;
     }
+#endif // DEBUG
 }
 
 void Collision_Grid::remove_from_grid(Unit &unit)
@@ -332,9 +316,10 @@ std::vector<Unit> Collision_Grid::check_collision(Unit &unit)
 void Collision_Grid::print()
 {
     for (int i = 0; i < MAP_ROWS * MAP_COLS; i++){
-        printf("Grid %d:\n", i);
+        printf("Grid %d: ", i);
         for (std::pair<int, Unit> kv : grid[i]) {
-            printf("Unit %d, Unit Type %d\n", kv.first, kv.second.type);
+            printf("Unit %d, Unit Type %d; \t", kv.first, kv.second.type);
         }
+        printf("\n");
     }
 }

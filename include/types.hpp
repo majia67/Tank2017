@@ -1,5 +1,6 @@
 #pragma once
 
+#include "utils.hpp"
 #include <string>
 #include <vector>
 #include <map>
@@ -14,9 +15,11 @@
 #define TANK_USER_NUM 1
 #define TANK_ENEMY_NUM 5
 #define TANK_NUM (TANK_USER_NUM + TANK_ENEMY_NUM)
+#define TANK_WIDTH_DELTA 0.01
 
 const static float BLOCK_WIDTH = 2.0f / BOARD_SIZE;
-const static float TANK_MOVE_STEP = BLOCK_WIDTH / 4.0f;
+const static float TANK_MOVE_STEP = BLOCK_WIDTH / 10.0f;
+const static float TANK_WIDTH = BLOCK_WIDTH - TANK_WIDTH_DELTA * 2;
 
 enum class Unit_Type
 {
@@ -51,13 +54,23 @@ public:
 	glm::vec2 downright;
 
     Unit();
-    Unit(Unit_Type unit_type);
 
-    void change_direction(Unit_Direction direction);
+    void init(Unit_Type unit_type, int row, int col);
+
+    bool change_direction(Unit_Direction direction);
 
     bool is_overlap(Unit &unit);
 };
 static int unit_id_factory = 0;
+
+class Tank : public Unit
+{
+public:
+
+    void init(Unit_Type unit_type, int row, int col);
+
+    void move();
+};
 
 class Tanks
 {
@@ -65,17 +78,11 @@ public:
     float vert[TANK_NUM * 2 * 2];
     float texc[TANK_NUM * 2 * 2];
 
-    Unit tanks[TANK_NUM];
+    Tank tank[TANK_NUM];
 
     void init();
 
-    void init_tank(int i, int row, int col);
-
-    void init_texc();
-
-    void change_direction(int i, Unit_Direction direction);
-
-    void move(int i);
+    void init_texc(std::vector<glm::mat2> &texture_mapping);
 
     void refresh_data();
 
@@ -88,17 +95,13 @@ public:
 	float vert[MAP_ROWS * MAP_COLS * 2 * 2];
 	float texc[MAP_ROWS * MAP_COLS * 2 * 2];
 
-	Unit_Type unit_types[MAP_ROWS][MAP_COLS];
-	
-    void init();
+    Unit block[MAP_ROWS][MAP_COLS];
 
-	void init_vert();
-
-	void init_texc();
+	void init_texc(std::vector<glm::mat2> &texture_mapping);
 
 	void read_map(std::string filename);
 
-	void read_texture_mapping(std::string filename);
+    void refresh_data();
 
 	void print();
 };
