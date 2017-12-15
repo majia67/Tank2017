@@ -114,9 +114,9 @@ public:
     int get_grid_index(float x, float y);
     std::set<int> get_grids_touched(Unit &unit);
 
-    void put_into_grid(Unit &unit);
-
-    void remove_from_grid(Unit &unit);
+    void put(Unit &unit);
+    void put_by_center(Unit &unit);
+    void remove(Unit &unit);
 
     std::vector<Unit> check_collision(Unit &unit);
 

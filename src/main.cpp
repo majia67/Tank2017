@@ -35,7 +35,9 @@ void on_tank_move(int i, Unit_Direction direction)
             return;
         }
         else {
+            coll_grid.remove(tanks.tank[i]);
             tanks.tank[i].move();
+            coll_grid.put(tanks.tank[i]);
         }
     }
     tanks.refresh_data();
@@ -164,14 +166,14 @@ int main(void)
                 map.block[i][j].type == Unit_Type::concrete ||
                 map.block[i][j].type == Unit_Type::sea)
             {
-                coll_grid.put_into_grid(map.block[i][j]);
+                coll_grid.put_by_center(map.block[i][j]);
             }
         }
     }
     // Tanks
     for (int i = 0; i < TANK_NUM; i++) {
         if (tanks.tank[i].is_visible) {
-            coll_grid.put_into_grid(tanks.tank[i]);
+            coll_grid.put_by_center(tanks.tank[i]);
         }
     }
 

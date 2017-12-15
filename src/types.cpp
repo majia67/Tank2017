@@ -275,7 +275,7 @@ std::set<int> Collision_Grid::get_grids_touched(Unit &unit)
     return grids_touched;
 }
 
-void Collision_Grid::put_into_grid(Unit &unit)
+void Collision_Grid::put(Unit &unit)
 {
 #ifdef DEBUG
     printf("Unit %d type %d touches grid:", unit.id, unit.type);
@@ -291,7 +291,14 @@ void Collision_Grid::put_into_grid(Unit &unit)
 #endif // DEBUG
 }
 
-void Collision_Grid::remove_from_grid(Unit &unit)
+void Collision_Grid::put_by_center(Unit &unit)
+{
+    glm::vec2 center = (unit.upleft + unit.downright) / 2.0f;
+    int grid_idx = get_grid_index(center.x, center.y);
+    grid[grid_idx][unit.id] = unit;
+}
+
+void Collision_Grid::remove(Unit &unit)
 {
     for (int grid_idx : get_grids_touched(unit)) {
         grid[grid_idx].erase(unit.id);
