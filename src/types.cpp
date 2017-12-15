@@ -101,24 +101,24 @@ void Tank::init(Unit_Type unit_type, int row, int col)
     downright.y += TANK_WIDTH_DELTA;
 }
 
-void Tank::move()
+void Tank::move(float step)
 {
     switch (direction)
     {
     case Unit_Direction::up:
-        upleft.y = std::min(1.0f, upleft.y + TANK_MOVE_STEP);
+        upleft.y = std::min(1.0f, upleft.y + step);
         downright.y = upleft.y - TANK_WIDTH;
         break;
     case Unit_Direction::down:
-        upleft.y = std::max(-1.0f, upleft.y - TANK_MOVE_STEP);
+        upleft.y = std::max(-1.0f, upleft.y - step);
         downright.y = upleft.y + TANK_WIDTH;
         break;
     case Unit_Direction::left:
-        upleft.x = std::max(-1.0f, upleft.x - TANK_MOVE_STEP);
+        upleft.x = std::max(-1.0f, upleft.x - step);
         downright.x = upleft.x + TANK_WIDTH;
         break;
     case Unit_Direction::right:
-        upleft.x = std::min(1.0f, upleft.x + TANK_MOVE_STEP);
+        upleft.x = std::min(1.0f, upleft.x + step);
         downright.x = upleft.x - TANK_WIDTH;
         break;
     }

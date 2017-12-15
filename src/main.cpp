@@ -22,12 +22,12 @@ VertexBufferObject vbo_tank_vert;
 template<typename T, int size>
 int getArrayLength(T(&)[size]) { return size; }
 
-void on_tank_move(int i, Unit_Direction direction)
+void on_tank_move(int i, Unit_Direction direction, float step)
 {
     if (tanks.tank[i].change_direction(direction) == false)
     {
         Tank dummy = tanks.tank[i];
-        dummy.move();
+        dummy.move(step);
 
         // Collision check
         std::vector<Unit> coll_units = coll_grid.check_collision(dummy);
@@ -36,7 +36,7 @@ void on_tank_move(int i, Unit_Direction direction)
         }
         else {
             coll_grid.remove(tanks.tank[i]);
-            tanks.tank[i].move();
+            tanks.tank[i].move(step);
             coll_grid.put(tanks.tank[i]);
         }
     }
@@ -46,19 +46,20 @@ void on_tank_move(int i, Unit_Direction direction)
     vbo_tank_vert.update(tanks.vert, getArrayLength(tanks.vert), 2);
 }
 
-void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods)
+void handle_keyboard(float delta_time)
 {
-    if (action != GLFW_PRESS)
-    {
-        return;
+    // Handle user tank movement
+    if (glfwGetKey(mWindow, GLFW_KEY_UP) == GLFW_PRESS) {
+        on_tank_move(0, Unit_Direction::up, delta_time * TANK_MOVE_STEP);
     }
-
-    switch (key)
-    {
-    case GLFW_KEY_UP: on_tank_move(0, Unit_Direction::up); break;
-    case GLFW_KEY_LEFT: on_tank_move(0, Unit_Direction::left); break;
-    case GLFW_KEY_DOWN: on_tank_move(0, Unit_Direction::down); break;
-    case GLFW_KEY_RIGHT: on_tank_move(0, Unit_Direction::right); break;
+    if (glfwGetKey(mWindow, GLFW_KEY_DOWN) == GLFW_PRESS) {
+        on_tank_move(0, Unit_Direction::down, delta_time * TANK_MOVE_STEP);
+    }
+    if (glfwGetKey(mWindow, GLFW_KEY_LEFT) == GLFW_PRESS) {
+        on_tank_move(0, Unit_Direction::left, delta_time * TANK_MOVE_STEP);
+    }
+    if (glfwGetKey(mWindow, GLFW_KEY_RIGHT) == GLFW_PRESS) {
+        on_tank_move(0, Unit_Direction::right, delta_time * TANK_MOVE_STEP);
     }
 }
 
@@ -88,7 +89,7 @@ int init_window()
 		return EXIT_FAILURE;
 	}
 
-    glfwSetKeyCallback(mWindow, key_callback);
+    glfwSetInputMode(mWindow, GLFW_STICKY_KEYS, 1);
 
 	return EXIT_SUCCESS;
 }
@@ -177,11 +178,20 @@ int main(void)
         }
     }
 
+    // Timer
+    double prev_time = glfwGetTime();
+
 	// Rendering Loop
 	while (!glfwWindowShouldClose(mWindow)) {
 		// Background Fill Color
 		glClearColor(0.25f, 0.25f, 0.25f, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT);
+
+        double cur_time = glfwGetTime();
+        float delta_time = float(cur_time - prev_time);
+        handle_keyboard(delta_time);
+
+        prev_time = cur_time;
 
 		// Draw the map
         vao_map.bind();

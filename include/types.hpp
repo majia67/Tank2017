@@ -15,10 +15,10 @@
 #define TANK_USER_NUM 1
 #define TANK_ENEMY_NUM 5
 #define TANK_NUM (TANK_USER_NUM + TANK_ENEMY_NUM)
-#define TANK_WIDTH_DELTA 0.01
+#define TANK_WIDTH_DELTA 0.01f
 
 const static float BLOCK_WIDTH = 2.0f / BOARD_SIZE;
-const static float TANK_MOVE_STEP = BLOCK_WIDTH / 10.0f;
+const static float TANK_MOVE_STEP = BLOCK_WIDTH * 2;
 const static float TANK_WIDTH = BLOCK_WIDTH - TANK_WIDTH_DELTA * 2;
 
 enum class Unit_Type
@@ -69,7 +69,7 @@ public:
 
     void init(Unit_Type unit_type, int row, int col);
 
-    void move();
+    void move(float step);
 };
 
 class Tanks
