@@ -21,6 +21,8 @@ VertexArrayObject vao_battle;
 VertexBufferObject vbo_map_vert;
 VertexBufferObject vbo_battle_vert;
 
+double prev_time, cur_time;
+
 template<typename T, int size>
 int getArrayLength(T(&)[size]) { return size; }
 
@@ -38,8 +40,9 @@ void update_battle_vbo()
     vbo_battle_vert.update(battle.vert, getArrayLength(battle.vert), 2);
 }
 
-void on_tank_move(int i, Unit_Direction direction, float step)
+void on_tank_move(int i, Unit_Direction direction)
 {
+    float step = (cur_time - prev_time) * TANK_MOVE_STEP;
     if (battle.tank[i].change_direction(direction) == false)
     {
         Tank dummy = battle.tank[i];
@@ -60,7 +63,23 @@ void on_tank_move(int i, Unit_Direction direction, float step)
     update_battle_vbo();
 }
 
-void handle_bullet_moving(float delta_time)
+void on_bullet_firing(int i)
+{
+    static double last_firing_time[TANK_NUM] = { 0.0f };
+
+    // Each tank can only fire one bullet at a time, and can't fire too fast
+    if (!battle.bullet[i].is_visible && cur_time - last_firing_time[i] > 0.5) {
+        battle.bullet[i].init(battle.tank[0]);
+        coll_grid.put(battle.bullet[i], false);
+
+        update_map_vbo();
+        update_battle_vbo();
+
+        last_firing_time[i] = cur_time;
+    }
+}
+
+void handle_bullet_moving()
 {
     for (int i = 0; i < TANK_NUM; i++) {
         if (battle.bullet[i].is_visible) {
@@ -71,7 +90,7 @@ void handle_bullet_moving(float delta_time)
                 continue;
             }
 
-            battle.bullet[i].move(delta_time * BULLET_MOVE_STEP);
+            battle.bullet[i].move((cur_time - prev_time) * BULLET_MOVE_STEP);
 
             // Collision check
             std::vector<Unit*> coll_units = coll_grid.check_collision(battle.bullet[i]);
@@ -94,26 +113,25 @@ void handle_bullet_moving(float delta_time)
     update_battle_vbo();
 }
 
-void handle_keyboard(float delta_time)
+void handle_keyboard()
 {
     // Handle user tank movement
     if (glfwGetKey(mWindow, GLFW_KEY_UP) == GLFW_PRESS) {
-        on_tank_move(0, Unit_Direction::up, delta_time * TANK_MOVE_STEP);
+        on_tank_move(0, Unit_Direction::up);
     }
     if (glfwGetKey(mWindow, GLFW_KEY_DOWN) == GLFW_PRESS) {
-        on_tank_move(0, Unit_Direction::down, delta_time * TANK_MOVE_STEP);
+        on_tank_move(0, Unit_Direction::down);
     }
     if (glfwGetKey(mWindow, GLFW_KEY_LEFT) == GLFW_PRESS) {
-        on_tank_move(0, Unit_Direction::left, delta_time * TANK_MOVE_STEP);
+        on_tank_move(0, Unit_Direction::left);
     }
     if (glfwGetKey(mWindow, GLFW_KEY_RIGHT) == GLFW_PRESS) {
-        on_tank_move(0, Unit_Direction::right, delta_time * TANK_MOVE_STEP);
+        on_tank_move(0, Unit_Direction::right);
     }
 
     // Handle firing the bullet
     if (glfwGetKey(mWindow, GLFW_KEY_SPACE) == GLFW_PRESS) {
-        battle.bullet[0].init(battle.tank[0]);
-        coll_grid.put(battle.bullet[0], false);
+        on_bullet_firing(0);
     }
 }
 
@@ -231,7 +249,7 @@ int main(void)
     }
 
     // Timer
-    double prev_time = glfwGetTime();
+    prev_time = glfwGetTime();
 
 	// Rendering Loop
 	while (!glfwWindowShouldClose(mWindow)) {
@@ -239,11 +257,10 @@ int main(void)
 		glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT);
 
-        double cur_time = glfwGetTime();
-        float delta_time = float(cur_time - prev_time);
+        cur_time = glfwGetTime();
 
-        handle_keyboard(delta_time);
-        handle_bullet_moving(delta_time);
+        handle_keyboard();
+        handle_bullet_moving();
 
         prev_time = cur_time;
 
