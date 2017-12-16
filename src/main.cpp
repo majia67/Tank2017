@@ -98,6 +98,10 @@ void handle_bullet_moving()
                     case Unit_Type::bullet:
                         unit->is_visible = false;
                         coll_grid.remove(*unit, true);
+                        bullet.is_visible = false;
+                        break;
+                    case Unit_Type::concrete:
+                        bullet.is_visible = false;
                         break;
                     case Unit_Type::tank_enemy:
                         if (bullet.owner_type == Unit_Type::tank_user) {
@@ -106,6 +110,7 @@ void handle_bullet_moving()
 
                             battle.enemy_num -= 1;
                             battle.enemy_left -= 1;
+                            bullet.is_visible = false;
                         }
                         break;
                     case Unit_Type::tank_user:
@@ -113,19 +118,21 @@ void handle_bullet_moving()
                             // The user is hit; reinitialized to the original position
                             coll_grid.remove(*unit, false);
                             battle.tank[0].init(Unit_Type::tank_user, MAP_ROWS - 1, 3);
+                            bullet.is_visible = false;
                         }
                         break;
                     case Unit_Type::home:
                         // The home is hit; game over
                         is_home_hit = true;
+                        bullet.is_visible = false;
                         break;
                     }
                 }
-                bullet.is_visible = false;
-                continue;
             }
 
-            coll_grid.put(bullet, false);
+            if (bullet.is_visible) {
+                coll_grid.put(bullet, false);
+            }
         }
     }
 }
@@ -223,9 +230,9 @@ int main(void)
     printf("GLSL %s\n", (const char*)glGetString(GL_SHADING_LANGUAGE_VERSION));
 
 	std::string unit_vert, unit_frag, unit_geom;
-	load_shader_file("shaders/unit.vert", unit_vert);
-	load_shader_file("shaders/unit.frag", unit_frag);
-	load_shader_file("shaders/unit.geom", unit_geom);
+	load_shader_file("../shaders/unit.vert", unit_vert);
+	load_shader_file("../shaders/unit.frag", unit_frag);
+	load_shader_file("../shaders/unit.geom", unit_geom);
 
 	Program program;
 	program.attach(GL_VERTEX_SHADER, unit_vert);
@@ -236,14 +243,14 @@ int main(void)
 
     // Initialize texture
     std::vector<glm::mat2> texture_mapping;
-    read_texture_mapping("res/map_texture_mapping.txt", texture_mapping);
+    read_texture_mapping("../res/map_texture_mapping.txt", texture_mapping);
 
     Texture texture_map;
-    texture_map.load(GL_TEXTURE0, "res/map.png");
+    texture_map.load(GL_TEXTURE0, "../res/map.png");
     glUniform1i(program.uniform("texMap"), 0);
 
     // Setting map
-    map.read_map("res/map.txt");
+    map.read_map("../res/map.txt");
     map.init_texc(texture_mapping);
 
     vao_map.init();
