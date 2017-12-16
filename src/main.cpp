@@ -40,27 +40,39 @@ void update_battle_vbo()
     vbo_battle_vert.update(battle.vert, getArrayLength(battle.vert), 2);
 }
 
-void on_tank_move(int i, Unit_Direction direction)
+bool on_tank_move(int i)
 {
-    float step = float(cur_time - prev_time) * TANK_MOVE_STEP;
-    if (battle.tank[i].change_direction(direction) == false)
-    {
-        Tank dummy = battle.tank[i];
-        dummy.move(step);
+    if (map.has_reached_edge(battle.tank[i])) {
+        return false;
+    }
 
-        // Collision check
-        std::vector<Unit*> coll_units = coll_grid.check_collision(dummy);
-        if (coll_units.size() > 0) {
-            return;
-        }
-        else {
-            coll_grid.remove(battle.tank[i], false);
-            battle.tank[i].move(step);
-            coll_grid.put(battle.tank[i], false);
-        }
+    float step = float(cur_time - prev_time) * TANK_MOVE_STEP;
+    Tank dummy = battle.tank[i];
+    dummy.move(step);
+
+    // Collision check
+    std::vector<Unit*> coll_units = coll_grid.check_collision(dummy);
+    if (coll_units.size() > 0) {
+        return false;
+    }
+    else {
+        coll_grid.remove(battle.tank[i], false);
+        battle.tank[i].move(step);
+        coll_grid.put(battle.tank[i], false);
     }
 
     update_battle_vbo();
+
+    return true;
+}
+
+bool on_tank_move(int i, Direction direction)
+{
+    if (battle.tank[i].change_direction(direction) == false) {
+        return on_tank_move(i);
+    }
+
+    return true;
 }
 
 void on_bullet_firing(int i)
@@ -69,7 +81,7 @@ void on_bullet_firing(int i)
 
     // Each tank can only fire one bullet at a time, and can't fire too fast
     if (!battle.bullet[i].is_visible && cur_time - last_firing_time[i] > 0.5) {
-        battle.bullet[i].init(battle.tank[0]);
+        battle.bullet[i].init(battle.tank[i]);
         coll_grid.put(battle.bullet[i], false);
 
         update_map_vbo();
@@ -85,7 +97,7 @@ void handle_bullet_moving()
         if (battle.bullet[i].is_visible) {
             coll_grid.remove(battle.bullet[i], false);
 
-            if (map.is_on_edge(battle.bullet[i])) {
+            if (map.has_reached_edge(battle.bullet[i])) {
                 battle.bullet[i].is_visible = false;
                 continue;
             }
@@ -113,20 +125,44 @@ void handle_bullet_moving()
     update_battle_vbo();
 }
 
+void handle_enemy_tanks()
+{
+    if (battle.enemy_num < TANK_ENEMY_NUM && battle.enemy_num < battle.enemy_left) {
+        // Make a new enemy
+    }
+
+    for (int i = 1; i < TANK_NUM; i++) {
+        Tank &tank = battle.tank[i];
+        if (tank.is_visible) {
+            // Switch a direction if can't move
+            if (on_tank_move(i) == false) {
+                int dir = static_cast<int>(tank.direction);
+                dir = (dir + rand() % 4) % 4;
+                tank.change_direction(static_cast<Direction>(dir));
+            }
+
+            // Fire a bullet
+            if (rand() % 1024 < 768) {
+                on_bullet_firing(i);
+            }
+        }
+    }
+}
+
 void handle_keyboard()
 {
     // Handle user tank movement
     if (glfwGetKey(mWindow, GLFW_KEY_UP) == GLFW_PRESS) {
-        on_tank_move(0, Unit_Direction::up);
+        on_tank_move(0, Direction::up);
     }
     if (glfwGetKey(mWindow, GLFW_KEY_DOWN) == GLFW_PRESS) {
-        on_tank_move(0, Unit_Direction::down);
+        on_tank_move(0, Direction::down);
     }
     if (glfwGetKey(mWindow, GLFW_KEY_LEFT) == GLFW_PRESS) {
-        on_tank_move(0, Unit_Direction::left);
+        on_tank_move(0, Direction::left);
     }
     if (glfwGetKey(mWindow, GLFW_KEY_RIGHT) == GLFW_PRESS) {
-        on_tank_move(0, Unit_Direction::right);
+        on_tank_move(0, Direction::right);
     }
 
     // Handle firing the bullet
@@ -260,6 +296,7 @@ int main(void)
         cur_time = glfwGetTime();
 
         handle_keyboard();
+        handle_enemy_tanks();
         handle_bullet_moving();
 
         prev_time = cur_time;

@@ -7,7 +7,7 @@
 
 Unit::Unit()
 {
-    direction = Unit_Direction::up;
+    direction = Direction::up;
     id = unit_id_factory++;
     is_visible = false;
 }
@@ -26,32 +26,32 @@ void Unit::init(Unit_Type unit_type, int row, int col)
     downright.y = 1.0f - (row + 1) * BLOCK_WIDTH;
 }
 
-bool Unit::change_direction(Unit_Direction direction)
+bool Unit::change_direction(Direction direction)
 {
     if (this->direction == direction) {
         return false;
     }
 
-    if (this->direction == Unit_Direction::up && direction == Unit_Direction::down ||
-        this->direction == Unit_Direction::down && direction == Unit_Direction::up ||
-        this->direction == Unit_Direction::left && direction == Unit_Direction::right ||
-        this->direction == Unit_Direction::right && direction == Unit_Direction::left)
+    if (this->direction == Direction::up && direction == Direction::down ||
+        this->direction == Direction::down && direction == Direction::up ||
+        this->direction == Direction::left && direction == Direction::right ||
+        this->direction == Direction::right && direction == Direction::left)
     {
         std::swap(this->upleft, this->downright);
     }
     else
-        if (this->direction == Unit_Direction::up && direction == Unit_Direction::right ||
-            this->direction == Unit_Direction::right && direction == Unit_Direction::up ||
-            this->direction == Unit_Direction::down && direction == Unit_Direction::left ||
-            this->direction == Unit_Direction::left && direction == Unit_Direction::down)
+        if (this->direction == Direction::up && direction == Direction::right ||
+            this->direction == Direction::right && direction == Direction::up ||
+            this->direction == Direction::down && direction == Direction::left ||
+            this->direction == Direction::left && direction == Direction::down)
         {
             std::swap(this->upleft.x, this->downright.x);
         }
         else
-            if (this->direction == Unit_Direction::up && direction == Unit_Direction::left ||
-                this->direction == Unit_Direction::left && direction == Unit_Direction::up ||
-                this->direction == Unit_Direction::down && direction == Unit_Direction::right ||
-                this->direction == Unit_Direction::right && direction == Unit_Direction::down)
+            if (this->direction == Direction::up && direction == Direction::left ||
+                this->direction == Direction::left && direction == Direction::up ||
+                this->direction == Direction::down && direction == Direction::right ||
+                this->direction == Direction::right && direction == Direction::down)
             {
                 std::swap(this->upleft.y, this->downright.y);
             }
@@ -73,19 +73,19 @@ void Unit::move(float step)
 
     switch (direction)
     {
-    case Unit_Direction::up:
+    case Direction::up:
         upleft.y = std::min(1.0f, upleft.y + step);
         downright.y = upleft.y - unit_width;
         break;
-    case Unit_Direction::down:
+    case Direction::down:
         upleft.y = std::max(-1.0f, upleft.y - step);
         downright.y = upleft.y + unit_width;
         break;
-    case Unit_Direction::left:
+    case Direction::left:
         upleft.x = std::max(-1.0f, upleft.x - step);
         downright.x = upleft.x + unit_width;
         break;
-    case Unit_Direction::right:
+    case Direction::right:
         upleft.x = std::min(1.0f, upleft.x + step);
         downright.x = upleft.x - unit_width;
         break;
@@ -141,7 +141,7 @@ void Bullet::init(Tank tank)
 
     switch (tank.direction)
     {
-    case Unit_Direction::up:
+    case Direction::up:
     {
         float center = (tank.upleft.x + tank.downright.x) / 2;
         upleft.x = center - BULLET_WIDTH / 2;
@@ -150,7 +150,7 @@ void Bullet::init(Tank tank)
         downright.y = tank.upleft.y;
     }
     break;
-    case Unit_Direction::down:
+    case Direction::down:
     {
         float center = (tank.upleft.x + tank.downright.x) / 2;
         upleft.x = center + BULLET_WIDTH / 2;
@@ -159,7 +159,7 @@ void Bullet::init(Tank tank)
         downright.y = tank.upleft.y;
     }
         break;
-    case Unit_Direction::left:
+    case Direction::left:
     {
         float center = (tank.upleft.y + tank.downright.y) / 2;
         upleft.x = tank.upleft.x - BULLET_WIDTH;
@@ -168,7 +168,7 @@ void Bullet::init(Tank tank)
         downright.y = center + BULLET_WIDTH / 2;
     }
         break;
-    case Unit_Direction::right:
+    case Direction::right:
     {
         float center = (tank.upleft.y + tank.downright.y) / 2;
         upleft.x = tank.upleft.x + BULLET_WIDTH;
@@ -187,7 +187,12 @@ void Battle::init()
 
     // Initialize the enemy tank
     tank[1].init(Unit_Type::tank_enemy, 0, 0);
-    tank[1].change_direction(Unit_Direction::down);
+    tank[1].change_direction(Direction::down);
+    tank[2].init(Unit_Type::tank_enemy, 0, MAP_COLS / 2);
+    tank[2].change_direction(Direction::down);
+    tank[3].init(Unit_Type::tank_enemy, 0, MAP_COLS - 1);
+    tank[3].change_direction(Direction::down);
+    enemy_num = 3;
 }
 
 void Battle::init_texc(std::vector<glm::mat2> &texture_mapping)
@@ -312,12 +317,12 @@ void Map::read_map(std::string filename)
 	fin.close();
 }
 
-bool Map::is_on_edge(Unit &unit)
+bool Map::has_reached_edge(Unit &unit)
 {
-    return unit.upleft.x == -1.0f || unit.upleft.x == 1.0f ||
-        unit.upleft.y == -1.0f || unit.upleft.y == 1.0f ||
-        unit.downright.x == -1.0f || unit.downright.x == 1.0f ||
-        unit.downright.y == -1.0f || unit.downright.y == 1.0f;
+    return (unit.direction == Direction::up && unit.upleft.y == 1.0f) ||
+        (unit.direction == Direction::down && unit.upleft.y == -1.0f) ||
+        (unit.direction == Direction::left && unit.upleft.x == -1.0f) ||
+        (unit.direction == Direction::right && unit.upleft.x == 1.0f);
 }
 
 void Map::refresh_data()

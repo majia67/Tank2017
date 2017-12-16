@@ -13,7 +13,8 @@
 #define MAP_ROWS BOARD_SIZE
 #define MAP_COLS BOARD_SIZE
 #define TANK_USER_NUM 1
-#define TANK_ENEMY_NUM 5
+#define TANK_ENEMY_NUM 3
+#define TANK_ENEMY_MAX_NUM 10
 #define TANK_NUM (TANK_USER_NUM + TANK_ENEMY_NUM)
 #define TANK_WIDTH_DELTA 0.01f
 
@@ -37,7 +38,7 @@ enum class Unit_Type
 	tank_user = 9,
 };
 
-enum class Unit_Direction
+enum class Direction
 {
     up = 0,
     right = 1,
@@ -50,7 +51,7 @@ class Unit
 public:
     int id;
 	Unit_Type type;
-    Unit_Direction direction;
+    Direction direction;
     bool is_visible;
 	glm::vec2 upleft;
 	glm::vec2 downright;
@@ -59,7 +60,7 @@ public:
 
     void init(Unit_Type unit_type, int row, int col);
 
-    bool change_direction(Unit_Direction direction);
+    bool change_direction(Direction direction);
 
     void move(float step);
 
@@ -90,6 +91,9 @@ public:
     Tank tank[TANK_NUM];
     Bullet bullet[TANK_NUM];
 
+    int enemy_num = 0;
+    int enemy_left = TANK_ENEMY_MAX_NUM;
+
     void init();
 
     void init_texc(std::vector<glm::mat2> &texture_mapping);
@@ -111,7 +115,7 @@ public:
 
 	void read_map(std::string filename);
 
-    bool is_on_edge(Unit &unit);
+    bool has_reached_edge(Unit &unit);
 
     void refresh_data();
 
