@@ -30,24 +30,42 @@ int getArrayLength(T(&)[size]) { return size; }
 
 bool on_tank_move(int i)
 {
-    if (map.has_reached_edge(battle.tank[i])) {
-        return false;
-    }
+    //if (map.has_reached_edge(battle.tank[i])) {
+    //    return false;
+    //}
 
     float step = float(cur_time - prev_time) * TANK_MOVE_STEP;
     Tank dummy = battle.tank[i];
     dummy.move(step);
 
+    if (dummy.upleft == battle.tank[i].upleft && dummy.downright == battle.tank[i].downright) {
+        return false;
+    }
+
     // Collision check
     std::vector<Unit*> coll_units = coll_grid.check_collision(dummy);
     if (coll_units.size() > 0) {
-        return false;
+        for (Unit* unit : coll_units) {
+            switch (unit->type) {
+            case Unit_Type::brick:
+            case Unit_Type::concrete:
+            case Unit_Type::sea:
+            case Unit_Type::home:
+            case Unit_Type::tank_enemy:
+            case Unit_Type::tank_user:
+                return false;
+            case Unit_Type::bullet:
+                if (((Bullet*)unit)->owner_type != dummy.type) {
+                    return false;
+                }
+                break;
+            }
+        }
     }
-    else {
-        coll_grid.remove(battle.tank[i], false);
-        battle.tank[i].move(step);
-        coll_grid.put(battle.tank[i], false);
-    }
+    
+    coll_grid.remove(battle.tank[i], false);
+    battle.tank[i].move(step);
+    coll_grid.put(battle.tank[i], false);
 
     return true;
 }
