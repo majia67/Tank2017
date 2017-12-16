@@ -61,6 +61,37 @@ bool Unit::change_direction(Unit_Direction direction)
     return true;
 }
 
+void Unit::move(float step)
+{
+    float unit_width = BLOCK_WIDTH;
+    if (type == Unit_Type::tank_enemy || type == Unit_Type::tank_user) {
+        unit_width = TANK_WIDTH;
+    }
+    else if (type == Unit_Type::bullet) {
+        unit_width = BULLET_WIDTH;
+    }
+
+    switch (direction)
+    {
+    case Unit_Direction::up:
+        upleft.y = std::min(1.0f, upleft.y + step);
+        downright.y = upleft.y - unit_width;
+        break;
+    case Unit_Direction::down:
+        upleft.y = std::max(-1.0f, upleft.y - step);
+        downright.y = upleft.y + unit_width;
+        break;
+    case Unit_Direction::left:
+        upleft.x = std::max(-1.0f, upleft.x - step);
+        downright.x = upleft.x + unit_width;
+        break;
+    case Unit_Direction::right:
+        upleft.x = std::min(1.0f, upleft.x + step);
+        downright.x = upleft.x - unit_width;
+        break;
+    }
+}
+
 bool Unit::is_overlap(Unit &unit)
 {
     // ref: http://www.geeksforgeeks.org/find-two-rectangles-overlap/
@@ -101,30 +132,55 @@ void Tank::init(Unit_Type unit_type, int row, int col)
     downright.y += TANK_WIDTH_DELTA;
 }
 
-void Tank::move(float step)
+void Bullet::init(Tank tank)
 {
-    switch (direction)
+    owner_id = tank.id;
+    type = Unit_Type::bullet;
+    direction = tank.direction;
+    is_visible = true;
+
+    switch (tank.direction)
     {
     case Unit_Direction::up:
-        upleft.y = std::min(1.0f, upleft.y + step);
-        downright.y = upleft.y - TANK_WIDTH;
-        break;
+    {
+        float center = (tank.upleft.x + tank.downright.x) / 2;
+        upleft.x = center - BULLET_WIDTH / 2;
+        upleft.y = tank.upleft.y + BULLET_WIDTH;
+        downright.x = center + BULLET_WIDTH / 2;
+        downright.y = tank.upleft.y;
+    }
+    break;
     case Unit_Direction::down:
-        upleft.y = std::max(-1.0f, upleft.y - step);
-        downright.y = upleft.y + TANK_WIDTH;
+    {
+        float center = (tank.upleft.x + tank.downright.x) / 2;
+        upleft.x = center + BULLET_WIDTH / 2;
+        upleft.y = tank.upleft.y - BULLET_WIDTH;
+        downright.x = center - BULLET_WIDTH / 2;
+        downright.y = tank.upleft.y;
+    }
         break;
     case Unit_Direction::left:
-        upleft.x = std::max(-1.0f, upleft.x - step);
-        downright.x = upleft.x + TANK_WIDTH;
+    {
+        float center = (tank.upleft.y + tank.downright.y) / 2;
+        upleft.x = tank.upleft.x - BULLET_WIDTH;
+        upleft.y = center - BULLET_WIDTH / 2;
+        downright.x = tank.upleft.x;
+        downright.y = center + BULLET_WIDTH / 2;
+    }
         break;
     case Unit_Direction::right:
-        upleft.x = std::min(1.0f, upleft.x + step);
-        downright.x = upleft.x - TANK_WIDTH;
+    {
+        float center = (tank.upleft.y + tank.downright.y) / 2;
+        upleft.x = tank.upleft.x + BULLET_WIDTH;
+        upleft.y = center + BULLET_WIDTH / 2;
+        downright.x = tank.upleft.x;
+        downright.y = center - BULLET_WIDTH / 2;
+    }
         break;
     }
 }
 
-void Tanks::init()
+void Battle::init()
 {
     // Initialize the user tank
     tank[0].init(Unit_Type::tank_user, MAP_ROWS - 1, 3);
@@ -134,8 +190,9 @@ void Tanks::init()
     tank[1].change_direction(Unit_Direction::down);
 }
 
-void Tanks::init_texc(std::vector<glm::mat2> &texture_mapping)
+void Battle::init_texc(std::vector<glm::mat2> &texture_mapping)
 {
+    // Set up tanks
     for (int i = 0; i < TANK_NUM; i++) {
         int st = i * 2 * 2;
         int unit_type = static_cast<int>(tank[i].type);
@@ -148,21 +205,58 @@ void Tanks::init_texc(std::vector<glm::mat2> &texture_mapping)
         texc[st + 2] = texture_mapping[unit_type][1].x;
         texc[st + 3] = texture_mapping[unit_type][1].y;
     }
-}
 
-void Tanks::refresh_data()
-{
-    for (int i = 0; i < TANK_NUM; i++)
-    {
-        int st = i * 2 * 2;
-        vert[st] = tank[i].upleft.x;
-        vert[st + 1] = tank[i].upleft.y;
-        vert[st + 2] = tank[i].downright.x;
-        vert[st + 3] = tank[i].downright.y;
+    // Set up bullets
+    for (int i = 0; i < TANK_NUM; i++) {
+        int st = (i + TANK_NUM) * 2 * 2;
+        int unit_type = static_cast<int>(bullet[i].type);
+
+        // set the upper left corner
+        texc[st] = texture_mapping[unit_type][0].x;
+        texc[st + 1] = texture_mapping[unit_type][0].y;
+
+        // set the lower right corner
+        texc[st + 2] = texture_mapping[unit_type][1].x;
+        texc[st + 3] = texture_mapping[unit_type][1].y;
     }
 }
 
-void Tanks::print()
+void Battle::refresh_data()
+{
+    // Tanks
+    for (int i = 0; i < TANK_NUM; i++)
+    {
+        int st = i * 2 * 2;
+        if (tank[i].is_visible)
+        {
+            vert[st] = tank[i].upleft.x;
+            vert[st + 1] = tank[i].upleft.y;
+            vert[st + 2] = tank[i].downright.x;
+            vert[st + 3] = tank[i].downright.y;
+        }
+        else {
+            vert[st] = vert[st + 1] = vert[st + 2] = vert[st + 3] = 0.0f;
+        }
+    }
+
+    // Bullets
+    for (int i = 0; i < TANK_NUM; i++)
+    {
+        int st = (i + TANK_NUM) * 2 * 2;
+        if (bullet[i].is_visible)
+        {
+            vert[st] = bullet[i].upleft.x;
+            vert[st + 1] = bullet[i].upleft.y;
+            vert[st + 2] = bullet[i].downright.x;
+            vert[st + 3] = bullet[i].downright.y;
+        }
+        else {
+            vert[st] = vert[st + 1] = vert[st + 2] = vert[st + 3] = 0.0f;
+        }
+    }
+}
+
+void Battle::print()
 {
     printf("The tanks are defined as following (vertices.xy, texCoords.uv):\n");
     for (int i = 0; i < TANK_NUM; i++) {
@@ -218,20 +312,32 @@ void Map::read_map(std::string filename)
 	fin.close();
 }
 
+bool Map::is_on_edge(Unit &unit)
+{
+    return unit.upleft.x == -1.0f || unit.upleft.x == 1.0f ||
+        unit.upleft.y == -1.0f || unit.upleft.y == 1.0f ||
+        unit.downright.x == -1.0f || unit.downright.x == 1.0f ||
+        unit.downright.y == -1.0f || unit.downright.y == 1.0f;
+}
+
 void Map::refresh_data()
 {
-    // Initialize vertices
     for (int i = 0; i < MAP_ROWS; i++) {
         for (int j = 0; j < MAP_COLS; j++) {
             int st = (i * MAP_COLS + j) * 2 * 2;
 
-            // set the upper left corner
-            vert[st] = block[i][j].upleft.x;
-            vert[st + 1] = block[i][j].upleft.y;
+            if (block[i][j].is_visible) {
+                // set the upper left corner
+                vert[st] = block[i][j].upleft.x;
+                vert[st + 1] = block[i][j].upleft.y;
 
-            // set the lower right corner
-            vert[st + 2] = block[i][j].downright.x;
-            vert[st + 3] = block[i][j].downright.y;
+                // set the lower right corner
+                vert[st + 2] = block[i][j].downright.x;
+                vert[st + 3] = block[i][j].downright.y;
+            }
+            else {
+                vert[st] = vert[st + 1] = vert[st + 2] = vert[st + 3] = 0.0f;
+            }
         }
     }
 }
@@ -263,55 +369,45 @@ int Collision_Grid::get_grid_index(float x, float y)
     return i * MAP_COLS + j;
 }
 
-std::set<int> Collision_Grid::get_grids_touched(Unit &unit)
+std::set<int> Collision_Grid::get_grids_touched(Unit &unit, bool by_center)
 {
     std::set<int> grids_touched;
 
-    grids_touched.insert(get_grid_index(unit.upleft.x, unit.upleft.y));
-    grids_touched.insert(get_grid_index(unit.upleft.x, unit.downright.y));
-    grids_touched.insert(get_grid_index(unit.downright.x, unit.upleft.y));
-    grids_touched.insert(get_grid_index(unit.downright.x, unit.downright.y));
+    if (by_center) {
+        glm::vec2 center = (unit.upleft + unit.downright) / 2.0f;
+        grids_touched.insert(get_grid_index(center.x, center.y));
+    }
+    else {
+        grids_touched.insert(get_grid_index(unit.upleft.x, unit.upleft.y));
+        grids_touched.insert(get_grid_index(unit.upleft.x, unit.downright.y));
+        grids_touched.insert(get_grid_index(unit.downright.x, unit.upleft.y));
+        grids_touched.insert(get_grid_index(unit.downright.x, unit.downright.y));
+    }
 
     return grids_touched;
 }
 
-void Collision_Grid::put(Unit &unit)
+void Collision_Grid::put(Unit &unit, bool by_center)
 {
-#ifdef DEBUG
-    printf("Unit %d type %d touches grid:", unit.id, unit.type);
-    for (int grid_idx : get_grids_touched(unit)) {
-        grid[grid_idx][unit.id] = unit;
-        printf("\t%d", grid_idx);
+    for (int grid_idx : get_grids_touched(unit, by_center)) {
+        grid[grid_idx][unit.id] = &unit;
     }
-    printf("\n");
-#else
-    for (int grid_idx : get_grids_touched(unit)) {
-        grid[grid_idx][unit.id] = unit;
-    }
-#endif // DEBUG
 }
 
-void Collision_Grid::put_by_center(Unit &unit)
+void Collision_Grid::remove(Unit &unit, bool by_center)
 {
-    glm::vec2 center = (unit.upleft + unit.downright) / 2.0f;
-    int grid_idx = get_grid_index(center.x, center.y);
-    grid[grid_idx][unit.id] = unit;
-}
-
-void Collision_Grid::remove(Unit &unit)
-{
-    for (int grid_idx : get_grids_touched(unit)) {
+    for (int grid_idx : get_grids_touched(unit, by_center)) {
         grid[grid_idx].erase(unit.id);
     }
 }
 
-std::vector<Unit> Collision_Grid::check_collision(Unit &unit)
+std::vector<Unit*> Collision_Grid::check_collision(Unit &unit)
 {
-    std::vector<Unit> unit_collides;
+    std::vector<Unit*> unit_collides;
 
-    for (int grid_idx : get_grids_touched(unit)) {
-        for (std::pair<int, Unit> kv : grid[grid_idx]) {
-            if (unit.id != kv.first && unit.is_overlap(kv.second)) {
+    for (int grid_idx : get_grids_touched(unit, false)) {
+        for (std::pair<int, Unit*> kv : grid[grid_idx]) {
+            if (unit.id != kv.first && unit.is_overlap(*kv.second)) {
                 unit_collides.push_back(kv.second);
             }
         }
@@ -324,8 +420,8 @@ void Collision_Grid::print()
 {
     for (int i = 0; i < MAP_ROWS * MAP_COLS; i++){
         printf("Grid %d: ", i);
-        for (std::pair<int, Unit> kv : grid[i]) {
-            printf("Unit %d, Unit Type %d; \t", kv.first, kv.second.type);
+        for (std::pair<int, Unit*> kv : grid[i]) {
+            printf("Unit %d, Unit Type %d; \t", kv.first, kv.second->type);
         }
         printf("\n");
     }

@@ -18,12 +18,14 @@
 #define TANK_WIDTH_DELTA 0.01f
 
 const static float BLOCK_WIDTH = 2.0f / BOARD_SIZE;
-const static float TANK_MOVE_STEP = BLOCK_WIDTH * 2;
+const static float TANK_MOVE_STEP = BLOCK_WIDTH * 1.5;
 const static float TANK_WIDTH = BLOCK_WIDTH - TANK_WIDTH_DELTA * 2;
+const static float BULLET_WIDTH = BLOCK_WIDTH * 0.15;
+const static float BULLET_MOVE_STEP = BLOCK_WIDTH * 2.5;
 
 enum class Unit_Type
 {
-	bg_gray = 0,
+	bullet = 0,
 	bg_black = 1,
 	road = 2,
 	forest = 3,
@@ -59,6 +61,8 @@ public:
 
     bool change_direction(Unit_Direction direction);
 
+    void move(float step);
+
     bool is_overlap(Unit &unit);
 };
 static int unit_id_factory = 0;
@@ -66,19 +70,25 @@ static int unit_id_factory = 0;
 class Tank : public Unit
 {
 public:
-
     void init(Unit_Type unit_type, int row, int col);
-
-    void move(float step);
 };
 
-class Tanks
+class Bullet : public Unit
 {
 public:
-    float vert[TANK_NUM * 2 * 2];
-    float texc[TANK_NUM * 2 * 2];
+    int owner_id;
+
+    void init(Tank tank);
+};
+
+class Battle
+{
+public:
+    float vert[TANK_NUM * 2 * 4];
+    float texc[TANK_NUM * 2 * 4];
 
     Tank tank[TANK_NUM];
+    Bullet bullet[TANK_NUM];
 
     void init();
 
@@ -101,6 +111,8 @@ public:
 
 	void read_map(std::string filename);
 
+    bool is_on_edge(Unit &unit);
+
     void refresh_data();
 
 	void print();
@@ -109,16 +121,15 @@ public:
 class Collision_Grid
 {
 public:
-    std::map<int, Unit> grid[MAP_ROWS * MAP_COLS];
+    std::map<int, Unit*> grid[MAP_ROWS * MAP_COLS];
 
     int get_grid_index(float x, float y);
-    std::set<int> get_grids_touched(Unit &unit);
+    std::set<int> get_grids_touched(Unit &unit, bool by_center);
 
-    void put(Unit &unit);
-    void put_by_center(Unit &unit);
-    void remove(Unit &unit);
+    void put(Unit &unit, bool by_center);
+    void remove(Unit &unit, bool by_center);
 
-    std::vector<Unit> check_collision(Unit &unit);
+    std::vector<Unit*> check_collision(Unit &unit);
 
     void print();
 };

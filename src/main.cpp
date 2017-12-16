@@ -13,37 +13,85 @@
 
 GLFWwindow* mWindow;
 Map map;
-Tanks tanks;
+Battle battle;
 Collision_Grid coll_grid;
 
-VertexArrayObject vao_tank;
-VertexBufferObject vbo_tank_vert;
+VertexArrayObject vao_map;
+VertexArrayObject vao_battle;
+VertexBufferObject vbo_map_vert;
+VertexBufferObject vbo_battle_vert;
 
 template<typename T, int size>
 int getArrayLength(T(&)[size]) { return size; }
 
+void update_map_vbo()
+{
+    map.refresh_data();
+    vao_map.bind();
+    vbo_map_vert.update(map.vert, getArrayLength(map.vert), 2);
+}
+
+void update_battle_vbo()
+{
+    battle.refresh_data();
+    vao_battle.bind();
+    vbo_battle_vert.update(battle.vert, getArrayLength(battle.vert), 2);
+}
+
 void on_tank_move(int i, Unit_Direction direction, float step)
 {
-    if (tanks.tank[i].change_direction(direction) == false)
+    if (battle.tank[i].change_direction(direction) == false)
     {
-        Tank dummy = tanks.tank[i];
+        Tank dummy = battle.tank[i];
         dummy.move(step);
 
         // Collision check
-        std::vector<Unit> coll_units = coll_grid.check_collision(dummy);
+        std::vector<Unit*> coll_units = coll_grid.check_collision(dummy);
         if (coll_units.size() > 0) {
             return;
         }
         else {
-            coll_grid.remove(tanks.tank[i]);
-            tanks.tank[i].move(step);
-            coll_grid.put(tanks.tank[i]);
+            coll_grid.remove(battle.tank[i], false);
+            battle.tank[i].move(step);
+            coll_grid.put(battle.tank[i], false);
         }
     }
-    tanks.refresh_data();
 
-    vao_tank.bind();
-    vbo_tank_vert.update(tanks.vert, getArrayLength(tanks.vert), 2);
+    update_battle_vbo();
+}
+
+void handle_bullet_moving(float delta_time)
+{
+    for (int i = 0; i < TANK_NUM; i++) {
+        if (battle.bullet[i].is_visible) {
+            coll_grid.remove(battle.bullet[i], false);
+
+            if (map.is_on_edge(battle.bullet[i])) {
+                battle.bullet[i].is_visible = false;
+                continue;
+            }
+
+            battle.bullet[i].move(delta_time * BULLET_MOVE_STEP);
+
+            // Collision check
+            std::vector<Unit*> coll_units = coll_grid.check_collision(battle.bullet[i]);
+            if (coll_units.size() > 0) {
+                for (Unit* unit : coll_units) {
+                    if (unit->type == Unit_Type::brick) {
+                        unit->is_visible = false;
+                        coll_grid.remove(*unit, true);
+                    }
+                }
+                battle.bullet[i].is_visible = false;
+                continue;
+            }
+
+            coll_grid.put(battle.bullet[i], false);
+        }
+    }
+
+    update_map_vbo();
+    update_battle_vbo();
 }
 
 void handle_keyboard(float delta_time)
@@ -60,6 +108,12 @@ void handle_keyboard(float delta_time)
     }
     if (glfwGetKey(mWindow, GLFW_KEY_RIGHT) == GLFW_PRESS) {
         on_tank_move(0, Unit_Direction::right, delta_time * TANK_MOVE_STEP);
+    }
+
+    // Handle firing the bullet
+    if (glfwGetKey(mWindow, GLFW_KEY_SPACE) == GLFW_PRESS) {
+        battle.bullet[0].init(battle.tank[0]);
+        coll_grid.put(battle.bullet[0], false);
     }
 }
 
@@ -128,11 +182,9 @@ int main(void)
     map.init_texc(texture_mapping);
     map.refresh_data();
 
-	VertexArrayObject vao_map;
     vao_map.init();
 	vao_map.bind();
 
-    VertexBufferObject vbo_map_vert;
     vbo_map_vert.init();
 	vbo_map_vert.update(map.vert, getArrayLength(map.vert), 2);
     program.bindVertexAttribArray("pos", vbo_map_vert);
@@ -143,21 +195,21 @@ int main(void)
     program.bindVertexAttribArray("texc", vbo_map_texc);
 
     // Setting tanks
-    tanks.init();
-    tanks.init_texc(texture_mapping);
-    tanks.refresh_data();
+    battle.init();
+    battle.init_texc(texture_mapping);
+    battle.refresh_data();
 
-    vao_tank.init();
-    vao_tank.bind();
+    vao_battle.init();
+    vao_battle.bind();
 
-    vbo_tank_vert.init();
-    vbo_tank_vert.update(tanks.vert, getArrayLength(tanks.vert), 2);
-    program.bindVertexAttribArray("pos", vbo_tank_vert);
+    vbo_battle_vert.init();
+    vbo_battle_vert.update(battle.vert, getArrayLength(battle.vert), 2);
+    program.bindVertexAttribArray("pos", vbo_battle_vert);
 
-    VertexBufferObject vbo_tank_texc;
-    vbo_tank_texc.init();
-    vbo_tank_texc.update(tanks.texc, getArrayLength(tanks.texc), 2);
-    program.bindVertexAttribArray("texc", vbo_tank_texc);
+    VertexBufferObject vbo_battle_texc;
+    vbo_battle_texc.init();
+    vbo_battle_texc.update(battle.texc, getArrayLength(battle.texc), 2);
+    program.bindVertexAttribArray("texc", vbo_battle_texc);
 
     // Setting collision grid
     // Map units
@@ -167,14 +219,14 @@ int main(void)
                 map.block[i][j].type == Unit_Type::concrete ||
                 map.block[i][j].type == Unit_Type::sea)
             {
-                coll_grid.put_by_center(map.block[i][j]);
+                coll_grid.put(map.block[i][j], true);
             }
         }
     }
     // Tanks
     for (int i = 0; i < TANK_NUM; i++) {
-        if (tanks.tank[i].is_visible) {
-            coll_grid.put_by_center(tanks.tank[i]);
+        if (battle.tank[i].is_visible) {
+            coll_grid.put(battle.tank[i], true);
         }
     }
 
@@ -184,12 +236,14 @@ int main(void)
 	// Rendering Loop
 	while (!glfwWindowShouldClose(mWindow)) {
 		// Background Fill Color
-		glClearColor(0.25f, 0.25f, 0.25f, 1.0f);
+		glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT);
 
         double cur_time = glfwGetTime();
         float delta_time = float(cur_time - prev_time);
+
         handle_keyboard(delta_time);
+        handle_bullet_moving(delta_time);
 
         prev_time = cur_time;
 
@@ -198,8 +252,8 @@ int main(void)
 		glDrawArrays(GL_LINES, 0, getArrayLength(map.vert) / 2);
 
         // Draw the tanks
-        vao_tank.bind();
-        glDrawArrays(GL_LINES, 0, getArrayLength(tanks.vert) / 2);
+        vao_battle.bind();
+        glDrawArrays(GL_LINES, 0, getArrayLength(battle.vert) / 2);
 
 		// Flip Buffers and Draw
 		glfwSwapBuffers(mWindow);
