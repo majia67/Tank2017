@@ -231,32 +231,38 @@ void Battle::refresh_data()
     // Tanks
     for (int i = 0; i < TANK_NUM; i++)
     {
-        int st = i * 2 * 2;
+        int st = i * 2 * 3;
         if (tank[i].is_visible)
         {
             vert[st] = tank[i].upleft.x;
             vert[st + 1] = tank[i].upleft.y;
-            vert[st + 2] = tank[i].downright.x;
-            vert[st + 3] = tank[i].downright.y;
+            vert[st + 2] = 0.1f;
+            vert[st + 3] = tank[i].downright.x;
+            vert[st + 4] = tank[i].downright.y;
+            vert[st + 5] = 0.1f;
         }
         else {
-            vert[st] = vert[st + 1] = vert[st + 2] = vert[st + 3] = 0.0f;
+            vert[st] = vert[st + 1] = vert[st + 2] = 0.0f;
+            vert[st + 3] = vert[st + 4] = vert[st + 5] = 0.0f;
         }
     }
 
     // Bullets
     for (int i = 0; i < TANK_NUM; i++)
     {
-        int st = (i + TANK_NUM) * 2 * 2;
+        int st = (i + TANK_NUM) * 2 * 3;
         if (bullet[i].is_visible)
         {
             vert[st] = bullet[i].upleft.x;
             vert[st + 1] = bullet[i].upleft.y;
-            vert[st + 2] = bullet[i].downright.x;
-            vert[st + 3] = bullet[i].downright.y;
+            vert[st + 2] = 0.0f;
+            vert[st + 3] = bullet[i].downright.x;
+            vert[st + 4] = bullet[i].downright.y;
+            vert[st + 5] = 0.0f;
         }
         else {
-            vert[st] = vert[st + 1] = vert[st + 2] = vert[st + 3] = 0.0f;
+            vert[st] = vert[st + 1] = vert[st + 3] = vert[st + 4] = 0.0f;
+            vert[st + 2] = vert[st + 5] = 1.0f;
         }
     }
 }
@@ -265,12 +271,13 @@ void Battle::print()
 {
     printf("The tanks are defined as following (vertices.xy, texCoords.uv):\n");
     for (int i = 0; i < TANK_NUM; i++) {
-        int st_v = i * 2 * 2;
+        int st_v = i * 2 * 3;
         int st_t = i * 2 * 2;
         for (int k = 0; k < 2; k++) {
-            printf("%.2f\t%.2f\t%.2f\t%.2f\n",
+            printf("%.2f\t%.2f\t%.2f\t%.2f\t%.2f\n",
                 vert[st_v + k * 2],
                 vert[st_v + k * 2 + 1],
+                vert[st_v + k * 2 + 2],
                 texc[st_t + k * 2],
                 texc[st_t + k * 2 + 1]
             );
@@ -329,7 +336,7 @@ void Map::refresh_data()
 {
     for (int i = 0; i < MAP_ROWS; i++) {
         for (int j = 0; j < MAP_COLS; j++) {
-            int st = (i * MAP_COLS + j) * 2 * 2;
+            int st = (i * MAP_COLS + j) * 2 * 3;
 
             if (block[i][j].is_visible) {
                 // set the upper left corner
@@ -337,11 +344,20 @@ void Map::refresh_data()
                 vert[st + 1] = block[i][j].upleft.y;
 
                 // set the lower right corner
-                vert[st + 2] = block[i][j].downright.x;
-                vert[st + 3] = block[i][j].downright.y;
+                vert[st + 3] = block[i][j].downright.x;
+                vert[st + 4] = block[i][j].downright.y;
+
+                // set the depth
+                if (block[i][j].type == Unit_Type::forest) {
+                    vert[st + 2] = vert[st + 5] = -0.5f;
+                }
+                else {
+                    vert[st + 2] = vert[st + 5] = 0.5f;
+                }
             }
             else {
-                vert[st] = vert[st + 1] = vert[st + 2] = vert[st + 3] = 0.0f;
+                vert[st] = vert[st + 1] = vert[st + 3] = vert[st + 4] = 0.0f;
+                vert[st + 2] = vert[st + 5] = 1.0f;
             }
         }
     }
@@ -353,12 +369,13 @@ void Map::print()
 	for (int i = 0; i < MAP_ROWS; i++) {
 		for (int j = 0; j < MAP_COLS; j++) {
 			printf("Block %d, %d\n", i, j);
-			int st_v = (i * MAP_COLS + j) * 2 * 2;
+			int st_v = (i * MAP_COLS + j) * 2 * 3;
 			int st_t = (i * MAP_COLS + j) * 2 * 2;
 			for (int k = 0; k < 2; k++) {
-				printf("%.2f\t%.2f\t%.2f\t%.2f\n",
+				printf("%.2f\t%.2f\t%.2f\t%.2f\t%.2f\n",
 					vert[st_v + k * 2],
 					vert[st_v + k * 2 + 1],
+                    vert[st_v + k * 2 + 2],
 					texc[st_t + k * 2],
 					texc[st_t + k * 2 + 1]
 				);

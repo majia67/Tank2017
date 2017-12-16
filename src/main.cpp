@@ -257,7 +257,7 @@ int main(void)
 	vao_map.bind();
 
     vbo_map_vert.init();
-    vbo_map_vert.update(map.vert, getArrayLength(map.vert), 2);
+    vbo_map_vert.update(map.vert, getArrayLength(map.vert), 3);
     program.bindVertexAttribArray("pos", vbo_map_vert);
 
 	VertexBufferObject vbo_map_texc;
@@ -273,13 +273,15 @@ int main(void)
     vao_battle.bind();
 
     vbo_battle_vert.init();
-    vbo_battle_vert.update(battle.vert, getArrayLength(battle.vert), 2);
+    vbo_battle_vert.update(battle.vert, getArrayLength(battle.vert), 3);
     program.bindVertexAttribArray("pos", vbo_battle_vert);
 
     VertexBufferObject vbo_battle_texc;
     vbo_battle_texc.init();
     vbo_battle_texc.update(battle.texc, getArrayLength(battle.texc), 2);
     program.bindVertexAttribArray("texc", vbo_battle_texc);
+
+    glEnable(GL_DEPTH_TEST);
 
     // Setting collision grid
     // Map units
@@ -308,7 +310,7 @@ int main(void)
 	while (!glfwWindowShouldClose(mWindow) && !is_home_hit) {
 		// Background Fill Color
 		glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
-		glClear(GL_COLOR_BUFFER_BIT);
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
         cur_time = glfwGetTime();
 
@@ -322,13 +324,13 @@ int main(void)
 		// Draw the map
         map.refresh_data();
         vao_map.bind();
-        vbo_map_vert.update(map.vert, getArrayLength(map.vert), 2);
+        vbo_map_vert.update(map.vert, getArrayLength(map.vert), 3);
 		glDrawArrays(GL_LINES, 0, getArrayLength(map.vert) / 2);
 
         // Draw the tanks
         battle.refresh_data();
         vao_battle.bind();
-        vbo_battle_vert.update(battle.vert, getArrayLength(battle.vert), 2);
+        vbo_battle_vert.update(battle.vert, getArrayLength(battle.vert), 3);
         glDrawArrays(GL_LINES, 0, getArrayLength(battle.vert) / 2);
 
 		// Flip Buffers and Draw

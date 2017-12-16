@@ -85,7 +85,7 @@ public:
 class Battle
 {
 public:
-    float vert[TANK_NUM * 2 * 4];
+    float vert[TANK_NUM * 2 * 6];
     float texc[TANK_NUM * 2 * 4];
 
     Tank tank[TANK_NUM];
@@ -106,7 +106,7 @@ public:
 class Map
 {
 public:
-	float vert[MAP_ROWS * MAP_COLS * 2 * 2];
+	float vert[MAP_ROWS * MAP_COLS * 2 * 6];
 	float texc[MAP_ROWS * MAP_COLS * 2 * 2];
 
     Unit block[MAP_ROWS][MAP_COLS];
