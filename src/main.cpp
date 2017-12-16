@@ -23,22 +23,10 @@ VertexBufferObject vbo_battle_vert;
 
 double prev_time, cur_time;
 
+bool is_home_hit = false;
+
 template<typename T, int size>
 int getArrayLength(T(&)[size]) { return size; }
-
-void update_map_vbo()
-{
-    map.refresh_data();
-    vao_map.bind();
-    vbo_map_vert.update(map.vert, getArrayLength(map.vert), 2);
-}
-
-void update_battle_vbo()
-{
-    battle.refresh_data();
-    vao_battle.bind();
-    vbo_battle_vert.update(battle.vert, getArrayLength(battle.vert), 2);
-}
 
 bool on_tank_move(int i)
 {
@@ -61,8 +49,6 @@ bool on_tank_move(int i)
         coll_grid.put(battle.tank[i], false);
     }
 
-    update_battle_vbo();
-
     return true;
 }
 
@@ -84,9 +70,6 @@ void on_bullet_firing(int i)
         battle.bullet[i].init(battle.tank[i]);
         coll_grid.put(battle.bullet[i], false);
 
-        update_map_vbo();
-        update_battle_vbo();
-
         last_firing_time[i] = cur_time;
     }
 }
@@ -95,42 +78,60 @@ void handle_bullet_moving()
 {
     for (int i = 0; i < TANK_NUM; i++) {
         if (battle.bullet[i].is_visible) {
-            coll_grid.remove(battle.bullet[i], false);
+            Bullet &bullet = battle.bullet[i];
+            coll_grid.remove(bullet, false);
 
-            if (map.has_reached_edge(battle.bullet[i])) {
-                battle.bullet[i].is_visible = false;
+            if (map.has_reached_edge(bullet)) {
+                bullet.is_visible = false;
                 continue;
             }
 
             battle.bullet[i].move(float(cur_time - prev_time) * BULLET_MOVE_STEP);
 
             // Collision check
-            std::vector<Unit*> coll_units = coll_grid.check_collision(battle.bullet[i]);
+            std::vector<Unit*> coll_units = coll_grid.check_collision(bullet);
             if (coll_units.size() > 0) {
                 for (Unit* unit : coll_units) {
-                    if (unit->type == Unit_Type::brick) {
+                    switch (unit->type)
+                    {
+                    case Unit_Type::brick:
+                    case Unit_Type::bullet:
                         unit->is_visible = false;
                         coll_grid.remove(*unit, true);
+                        break;
+                    case Unit_Type::tank_enemy:
+                        if (bullet.owner_type == Unit_Type::tank_user) {
+                            unit->is_visible = false;
+                            coll_grid.remove(*unit, false);
+
+                            battle.enemy_num -= 1;
+                            battle.enemy_left -= 1;
+                        }
+                        break;
+                    case Unit_Type::tank_user:
+                        if (bullet.owner_type == Unit_Type::tank_enemy) {
+                            // The user is hit; reinitialized to the original position
+                            coll_grid.remove(*unit, false);
+                            battle.tank[0].init(Unit_Type::tank_user, MAP_ROWS - 1, 3);
+                        }
+                        break;
+                    case Unit_Type::home:
+                        // The home is hit; game over
+                        is_home_hit = true;
+                        break;
                     }
                 }
-                battle.bullet[i].is_visible = false;
+                bullet.is_visible = false;
                 continue;
             }
 
-            coll_grid.put(battle.bullet[i], false);
+            coll_grid.put(bullet, false);
         }
     }
-
-    update_map_vbo();
-    update_battle_vbo();
 }
 
 void handle_enemy_tanks()
 {
-    if (battle.enemy_num < TANK_ENEMY_NUM && battle.enemy_num < battle.enemy_left) {
-        // Make a new enemy
-    }
-
     for (int i = 1; i < TANK_NUM; i++) {
         Tank &tank = battle.tank[i];
         if (tank.is_visible) {
@@ -145,6 +146,16 @@ void handle_enemy_tanks()
             if (rand() % 1024 < 768) {
                 on_bullet_firing(i);
             }
+        } else if (battle.enemy_num < TANK_ENEMY_NUM && battle.enemy_num < battle.enemy_left) {
+            // Make a new enemy
+            int pos = rand() % 3;
+            switch (pos) {
+            case 0: tank.init(Unit_Type::tank_enemy, 0, 0); break;
+            case 1: tank.init(Unit_Type::tank_enemy, 0, MAP_COLS / 2); break;
+            case 2: tank.init(Unit_Type::tank_enemy, 0, MAP_COLS - 1); break;
+            }
+            tank.change_direction(Direction::down);
+            coll_grid.put(tank, true);
         }
     }
 }
@@ -234,13 +245,12 @@ int main(void)
     // Setting map
     map.read_map("res/map.txt");
     map.init_texc(texture_mapping);
-    map.refresh_data();
 
     vao_map.init();
 	vao_map.bind();
 
     vbo_map_vert.init();
-	vbo_map_vert.update(map.vert, getArrayLength(map.vert), 2);
+    vbo_map_vert.update(map.vert, getArrayLength(map.vert), 2);
     program.bindVertexAttribArray("pos", vbo_map_vert);
 
 	VertexBufferObject vbo_map_texc;
@@ -251,7 +261,6 @@ int main(void)
     // Setting tanks
     battle.init();
     battle.init_texc(texture_mapping);
-    battle.refresh_data();
 
     vao_battle.init();
     vao_battle.bind();
@@ -271,7 +280,8 @@ int main(void)
         for (int j = 0; j < MAP_COLS; j++) {
             if (map.block[i][j].type == Unit_Type::brick ||
                 map.block[i][j].type == Unit_Type::concrete ||
-                map.block[i][j].type == Unit_Type::sea)
+                map.block[i][j].type == Unit_Type::sea ||
+                map.block[i][j].type == Unit_Type::home)
             {
                 coll_grid.put(map.block[i][j], true);
             }
@@ -288,13 +298,14 @@ int main(void)
     prev_time = glfwGetTime();
 
 	// Rendering Loop
-	while (!glfwWindowShouldClose(mWindow)) {
+	while (!glfwWindowShouldClose(mWindow) && !is_home_hit) {
 		// Background Fill Color
 		glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT);
 
         cur_time = glfwGetTime();
 
+        // Main game logic
         handle_keyboard();
         handle_enemy_tanks();
         handle_bullet_moving();
@@ -302,11 +313,15 @@ int main(void)
         prev_time = cur_time;
 
 		// Draw the map
+        map.refresh_data();
         vao_map.bind();
+        vbo_map_vert.update(map.vert, getArrayLength(map.vert), 2);
 		glDrawArrays(GL_LINES, 0, getArrayLength(map.vert) / 2);
 
         // Draw the tanks
+        battle.refresh_data();
         vao_battle.bind();
+        vbo_battle_vert.update(battle.vert, getArrayLength(battle.vert), 2);
         glDrawArrays(GL_LINES, 0, getArrayLength(battle.vert) / 2);
 
 		// Flip Buffers and Draw

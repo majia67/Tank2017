@@ -134,7 +134,7 @@ void Tank::init(Unit_Type unit_type, int row, int col)
 
 void Bullet::init(Tank tank)
 {
-    owner_id = tank.id;
+    owner_type = tank.type;
     type = Unit_Type::bullet;
     direction = tank.direction;
     is_visible = true;

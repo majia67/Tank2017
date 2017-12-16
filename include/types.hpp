@@ -77,7 +77,7 @@ public:
 class Bullet : public Unit
 {
 public:
-    int owner_id;
+    Unit_Type owner_type;
 
     void init(Tank tank);
 };
