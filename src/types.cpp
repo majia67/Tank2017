@@ -7,7 +7,6 @@
 
 Unit::Unit()
 {
-    direction = Direction::up;
     id = unit_id_factory++;
     is_visible = false;
 }
@@ -15,6 +14,7 @@ Unit::Unit()
 void Unit::init(Unit_Type unit_type, int row, int col)
 {
     type = unit_type;
+    direction = Direction::up;
     is_visible = true;
 
     // set the upper left corner
@@ -231,7 +231,7 @@ void Battle::refresh_data()
     // Tanks
     for (int i = 0; i < TANK_NUM; i++)
     {
-        int st = i * 2 * 3;
+        int st = i * 6;
         if (tank[i].is_visible)
         {
             vert[st] = tank[i].upleft.x;
@@ -250,7 +250,7 @@ void Battle::refresh_data()
     // Bullets
     for (int i = 0; i < TANK_NUM; i++)
     {
-        int st = (i + TANK_NUM) * 2 * 3;
+        int st = (i + TANK_NUM) * 6;
         if (bullet[i].is_visible)
         {
             vert[st] = bullet[i].upleft.x;
@@ -271,8 +271,8 @@ void Battle::print()
 {
     printf("The tanks are defined as following (vertices.xy, texCoords.uv):\n");
     for (int i = 0; i < TANK_NUM; i++) {
-        int st_v = i * 2 * 3;
-        int st_t = i * 2 * 2;
+        int st_v = i * 6;
+        int st_t = i * 4;
         for (int k = 0; k < 2; k++) {
             printf("%.2f\t%.2f\t%.2f\t%.2f\t%.2f\n",
                 vert[st_v + k * 2],
@@ -290,7 +290,7 @@ void Map::init_texc(std::vector<glm::mat2> &texture_mapping)
 	// Initialize texture coordinates
 	for (int i = 0; i < MAP_ROWS; i++) {
 		for (int j = 0; j < MAP_COLS; j++) {
-			int st = (i * MAP_COLS + j) * 2 * 2;
+			int st = (i * MAP_COLS + j) * 4;
 			int unit_type = static_cast<int>(block[i][j].type);
 
 			// set the upper left corner
@@ -336,7 +336,7 @@ void Map::refresh_data()
 {
     for (int i = 0; i < MAP_ROWS; i++) {
         for (int j = 0; j < MAP_COLS; j++) {
-            int st = (i * MAP_COLS + j) * 2 * 3;
+            int st = (i * MAP_COLS + j) * 6;
 
             if (block[i][j].is_visible) {
                 // set the upper left corner
@@ -369,8 +369,8 @@ void Map::print()
 	for (int i = 0; i < MAP_ROWS; i++) {
 		for (int j = 0; j < MAP_COLS; j++) {
 			printf("Block %d, %d\n", i, j);
-			int st_v = (i * MAP_COLS + j) * 2 * 3;
-			int st_t = (i * MAP_COLS + j) * 2 * 2;
+			int st_v = (i * MAP_COLS + j) * 6;
+			int st_t = (i * MAP_COLS + j) * 4;
 			for (int k = 0; k < 2; k++) {
 				printf("%.2f\t%.2f\t%.2f\t%.2f\t%.2f\n",
 					vert[st_v + k * 2],
