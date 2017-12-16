@@ -54,11 +54,6 @@ bool on_tank_move(int i)
             case Unit_Type::tank_enemy:
             case Unit_Type::tank_user:
                 return false;
-            case Unit_Type::bullet:
-                if (((Bullet*)unit)->owner_type != dummy.type) {
-                    return false;
-                }
-                break;
             }
         }
     }
