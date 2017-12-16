@@ -157,9 +157,22 @@ void handle_enemy_tanks()
         if (tank.is_visible) {
             // Switch a direction if can't move
             if (on_tank_move(i) == false) {
-                int dir = static_cast<int>(tank.direction);
-                dir = (dir + rand() % 4) % 4;
-                tank.change_direction(static_cast<Direction>(dir));
+                int r = rand() % 100;
+                if (r < 50 && tank.direction != Direction::down) {
+                    tank.change_direction(Direction::down);
+                }
+                else if (r < 70 && tank.direction != Direction::left) {
+                    tank.change_direction(Direction::left);
+                }
+                else if (r < 90 && tank.direction != Direction::right) {
+                    tank.change_direction(Direction::right);
+                }
+                else if (tank.direction != Direction::up) {
+                    tank.change_direction(Direction::up);
+                }
+                else {
+                    tank.change_direction(Direction::down);
+                }
             }
 
             // Fire a bullet
