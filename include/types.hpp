@@ -16,7 +16,7 @@
 #define TANK_ENEMY_NUM 3
 #define TANK_ENEMY_MAX_NUM 10
 #define TANK_NUM (TANK_USER_NUM + TANK_ENEMY_NUM)
-#define TANK_WIDTH_DELTA 0.01f
+#define TANK_WIDTH_DELTA 0.02f
 
 const static float BLOCK_WIDTH = 2.0f / BOARD_SIZE;
 const static float TANK_MOVE_STEP = BLOCK_WIDTH * 1.5;
