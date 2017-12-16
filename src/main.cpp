@@ -42,7 +42,7 @@ void update_battle_vbo()
 
 void on_tank_move(int i, Unit_Direction direction)
 {
-    float step = (cur_time - prev_time) * TANK_MOVE_STEP;
+    float step = float(cur_time - prev_time) * TANK_MOVE_STEP;
     if (battle.tank[i].change_direction(direction) == false)
     {
         Tank dummy = battle.tank[i];
@@ -90,7 +90,7 @@ void handle_bullet_moving()
                 continue;
             }
 
-            battle.bullet[i].move((cur_time - prev_time) * BULLET_MOVE_STEP);
+            battle.bullet[i].move(float(cur_time - prev_time) * BULLET_MOVE_STEP);
 
             // Collision check
             std::vector<Unit*> coll_units = coll_grid.check_collision(battle.bullet[i]);

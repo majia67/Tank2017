@@ -20,8 +20,8 @@
 const static float BLOCK_WIDTH = 2.0f / BOARD_SIZE;
 const static float TANK_MOVE_STEP = BLOCK_WIDTH * 1.5;
 const static float TANK_WIDTH = BLOCK_WIDTH - TANK_WIDTH_DELTA * 2;
-const static float BULLET_WIDTH = BLOCK_WIDTH * 0.15;
-const static float BULLET_MOVE_STEP = BLOCK_WIDTH * 2.5;
+const static float BULLET_WIDTH = BLOCK_WIDTH * 0.15f;
+const static float BULLET_MOVE_STEP = BLOCK_WIDTH * 2.5f;
 
 enum class Unit_Type
 {
