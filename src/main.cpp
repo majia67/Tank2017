@@ -182,13 +182,41 @@ void handle_enemy_tanks()
         } else if (battle.enemy_num < TANK_ENEMY_NUM && battle.enemy_num < battle.enemy_left) {
             // Make a new enemy
             int pos = rand() % 3;
-            switch (pos) {
-            case 0: tank.init(Unit_Type::tank_enemy, 0, 0); break;
-            case 1: tank.init(Unit_Type::tank_enemy, 0, MAP_COLS / 2); break;
-            case 2: tank.init(Unit_Type::tank_enemy, 0, MAP_COLS - 1); break;
+            Tank dummy = tank;
+            for (int i = 0; i < 3; i++) {
+                switch ((pos + i) % 3) {
+                case 0: dummy.init(Unit_Type::tank_enemy, 0, 0); break;
+                case 1: dummy.init(Unit_Type::tank_enemy, 0, MAP_COLS / 2); break;
+                case 2: dummy.init(Unit_Type::tank_enemy, 0, MAP_COLS - 1); break;
+                }
+                dummy.change_direction(Direction::down);
+
+                // Check if there is a tank on the reborn place
+                std::vector<Unit*> coll_units = coll_grid.check_collision(dummy);
+                bool check_failed = false;
+                for (Unit* unit : coll_units) {
+                    switch (unit->type) {
+                    case Unit_Type::tank_enemy:
+                    case Unit_Type::tank_user:
+                        check_failed = true;
+                        break;
+                    }
+
+                    if (check_failed) {
+                        break;
+                    }
+                }
+
+                if (check_failed) {
+                    continue;
+                }
+                else {
+                    tank = dummy;
+                    coll_grid.put(tank, true);
+                    battle.enemy_num += 1;
+                    break;
+                }
             }
-            tank.change_direction(Direction::down);
-            coll_grid.put(tank, true);
         }
     }
 }
