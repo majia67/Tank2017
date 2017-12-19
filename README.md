@@ -15,7 +15,8 @@ Move: Up/Down/Left/Right
 Fire: Space
 
 ### Implementation Details
-+ Map blocks, tanks & bullets: rectangles specified by the upper left and lower right corners, and generated on-the-fly in the geometry shader
++ Map blocks, tanks & bullets: rectangles specified by the upper left and lower right 
+ corners, and generated on-the-fly in the geometry shader
 + Texture mapping: one aggregate texture image with predefined uv indices
 + Collision detection: using regular grid
 + Relative position with sea and forest: doing depth test

@@ -6,7 +6,7 @@
 // System Headers
 #include <GLFW/glfw3.h>
 
-// Standard Headers
+// Standard Headers 
 #include <cstdio>
 #include <cstdlib>
 #include <iostream>
@@ -176,7 +176,7 @@ void handle_enemy_tanks()
             }
 
             // Fire a bullet
-            if (rand() % 1024 < 768) {
+            if (rand() % 1024 < 10) {
                 on_bullet_firing(i);
             }
         } else if (battle.enemy_num < TANK_ENEMY_NUM && battle.enemy_num < battle.enemy_left) {
@@ -247,8 +247,8 @@ int init_window()
 {
 	// Load GLFW and Create a Window
 	glfwInit();
-	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
-	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
+	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
+	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 2);
 	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 	glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
 	glfwWindowHint(GLFW_RESIZABLE, GL_FALSE);
